@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const lang = body.lang === "en" ? "en" : "fr";
     const email = body.email || "";
 
-    const portalPath = lang === "fr" ? "/fr/client/espace" : "/en/client/portal";
+    const portalPath = lang === "fr" ? "/fr/connexion" : "/en/connexion";
     const verifyUrl = `${origin}/api/llc/verify?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(portalPath)}&lang=${lang}`;
 
     await sendVemoVerificationEmail({ email, verifyUrl, lang });

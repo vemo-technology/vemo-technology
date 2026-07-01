@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   const email = url.searchParams.get("email") || "";
   const lang = url.searchParams.get("lang") === "en" ? "en" : "fr";
 
-  const fallback = lang === "fr" ? "/fr/client/espace" : "/en/client/portal";
+  const fallback = lang === "fr" ? "/fr/connexion" : "/en/connexion";
   const redirectParam = url.searchParams.get("redirect") || fallback;
   const safeRedirect = redirectParam.startsWith("/") ? redirectParam : fallback;
 

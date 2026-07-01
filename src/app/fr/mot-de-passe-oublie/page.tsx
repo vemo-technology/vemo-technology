@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
     setMessage("");
 
     try {
-      const res = await fetch("/api/client-portal/forgot-password", {
+      const res = await fetch("/api/vemo/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -21,16 +21,23 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: { error?: string } = {};
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { error: text };
+      }
 
       if (!res.ok) {
-        setMessage(data?.error || "Erreur lors de l’envoi du lien.");
+        setMessage(data?.error || `Erreur ${res.status}`);
         return;
       }
 
       setMessage("Un lien de réinitialisation vient d’être envoyé à votre adresse email.");
-    } catch {
-      setMessage("Impossible de contacter le serveur. Vérifiez le déploiement Vercel.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Impossible de contacter le serveur.");
     } finally {
       setLoading(false);
     }
@@ -57,14 +64,7 @@ export default function ForgotPasswordPage() {
           padding: "42px 28px",
         }}
       >
-        <Link
-          href="/fr/connexion"
-          style={{
-            color: "#0F172A",
-            fontWeight: 800,
-            textDecoration: "none",
-          }}
-        >
+        <Link href="/fr/connexion" style={{ color: "#0F172A", fontWeight: 800, textDecoration: "none" }}>
           ← Retour connexion
         </Link>
 
@@ -72,38 +72,16 @@ export default function ForgotPasswordPage() {
           <div style={{ fontSize: "28px", fontWeight: 900, color: "#123A63" }}>
             VEMO<span style={{ color: "#F15A24" }}>TECH</span>
           </div>
-          <div
-            style={{
-              marginTop: "8px",
-              fontSize: "11px",
-              fontWeight: 900,
-              letterSpacing: "6px",
-              color: "#8AA0BF",
-            }}
-          >
+          <div style={{ marginTop: "8px", fontSize: "11px", fontWeight: 900, letterSpacing: "6px", color: "#8AA0BF" }}>
             ESPACE CLIENT
           </div>
         </div>
 
-        <h1
-          style={{
-            margin: "0 0 16px",
-            color: "#0F172A",
-            fontSize: "34px",
-            lineHeight: 1.1,
-          }}
-        >
+        <h1 style={{ margin: "0 0 16px", color: "#0F172A", fontSize: "34px", lineHeight: 1.1 }}>
           Mot de passe oublié
         </h1>
 
-        <p
-          style={{
-            margin: "0 0 26px",
-            color: "#5B6F91",
-            fontWeight: 800,
-            lineHeight: 1.6,
-          }}
-        >
+        <p style={{ margin: "0 0 26px", color: "#5B6F91", fontWeight: 800, lineHeight: 1.6 }}>
           Saisis ton email. Tu recevras un lien sécurisé pour choisir un nouveau mot de passe.
         </p>
 

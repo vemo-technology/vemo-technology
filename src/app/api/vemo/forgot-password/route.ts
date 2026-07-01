@@ -40,9 +40,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const resetUrl = `${siteUrl()}/fr/reinitialiser-mot-de-passe?email=${encodeURIComponent(
-      email
-    )}`;
+    const resetUrl = `${siteUrl()}/fr/reinitialiser-mot-de-passe?email=${encodeURIComponent(email)}`;
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -70,7 +68,7 @@ export async function POST(request: Request) {
     });
 
     const text = await response.text();
-    let data: any = null;
+    let data: { message?: string; error?: string; raw?: string } | null = null;
 
     try {
       data = text ? JSON.parse(text) : null;
@@ -84,7 +82,7 @@ export async function POST(request: Request) {
           error:
             data?.message ||
             data?.error ||
-            "Email non envoyé. Vérifiez Resend, MAIL_FROM et le domaine.",
+            "Email non envoyé. Vérifiez Resend, MAIL_FROM / EMAIL_FROM et le domaine.",
           details: data,
         },
         { status: 500 }
@@ -92,11 +90,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true, data });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
       {
         error: "Erreur serveur.",
-        details: error?.message || String(error),
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

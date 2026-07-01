@@ -1,59 +1,81 @@
+type SendVemoVerificationEmailInput = {
+  email: string;
+  verifyUrl: string;
+  lang?: string;
+};
+
+function fromEmail() {
+  return (
+    process.env.MAIL_FROM ||
+    process.env.EMAIL_FROM ||
+    "VEMO Technology <contact@vemo-technology.com>"
+  );
+}
+
 export async function sendVemoVerificationEmail({
   email,
   verifyUrl,
-  lang,
-}: {
-  email: string;
-  verifyUrl: string;
-  lang: "fr" | "en";
-}) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.MAIL_FROM || "VEMO Technology <onboarding@resend.dev>";
+  lang = "fr",
+}: SendVemoVerificationEmailInput) {
+  const resendKey = process.env.RESEND_API_KEY;
 
-  if (!apiKey || !email) {
-    return { sent: false };
+  if (!email || !resendKey) {
+    console.error("VEMO email not sent", {
+      hasEmail: Boolean(email),
+      hasResendKey: Boolean(resendKey),
+    });
+    return { ok: false };
   }
 
   const subject =
-    lang === "fr"
-      ? "Confirmez votre compte VEMO Technology"
-      : "Confirm your VEMO Technology account";
+    lang === "en"
+      ? "Confirm your VEMO Technology client account"
+      : "Confirmez votre compte client VEMO Technology";
 
-  const html =
-    lang === "fr"
-      ? `
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#101828">
-          <h2 style="color:#123A63">Confirmez votre compte VEMO Technology</h2>
-          <p>Votre dossier LLC a bien été enregistré.</p>
-          <p>Pour accéder à votre espace client, confirmez votre adresse email.</p>
-          <p style="margin-top:28px">
-            <a href="${verifyUrl}" style="background:#F15A24;color:white;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">
-              Confirmer mon email
-            </a>
-          </p>
-        </div>
-      `
-      : `
-        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;color:#101828">
-          <h2 style="color:#123A63">Confirm your VEMO Technology account</h2>
-          <p>Your LLC file has been saved.</p>
-          <p>To access your client portal, confirm your email address.</p>
-          <p style="margin-top:28px">
-            <a href="${verifyUrl}" style="background:#F15A24;color:white;text-decoration:none;padding:14px 22px;border-radius:12px;font-weight:bold">
-              Confirm my email
-            </a>
-          </p>
-        </div>
-      `;
+  const title =
+    lang === "en"
+      ? "Confirm your email address"
+      : "Confirmez votre adresse email";
 
-  const res = await fetch("https://api.resend.com/emails", {
+  const text =
+    lang === "en"
+      ? "Click the button below to activate your client account."
+      : "Cliquez sur le bouton ci-dessous pour activer votre compte client.";
+
+  const button =
+    lang === "en"
+      ? "Activate my account"
+      : "Activer mon compte";
+
+  const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${resendKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from, to: email, subject, html }),
+    body: JSON.stringify({
+      from: fromEmail(),
+      to: email,
+      subject,
+      html: `
+        <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6">
+          <h2>${title}</h2>
+          <p>${text}</p>
+          <p>
+            <a href="${verifyUrl}" style="display:inline-block;background:#F15A24;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
+              ${button}
+            </a>
+          </p>
+        </div>
+      `,
+    }),
   });
 
-  return { sent: res.ok };
+  if (!response.ok) {
+    const details = await response.text().catch(() => "");
+    console.error("VEMO verification email failed", details);
+    return { ok: false, details };
+  }
+
+  return { ok: true };
 }
