@@ -1,114 +1,166 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-export const dynamic = "force-dynamic";
-
-function supabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-  if (!url || !key) return null;
-
-  return createClient(url, key);
-}
+import Link from "next/link";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function sendResetLink() {
+  async function submit() {
+    setLoading(true);
     setMessage("");
 
-    const cleanEmail = email.trim().toLowerCase();
-
-    if (!cleanEmail) {
-      setMessage("Renseigne ton email.");
-      return;
-    }
-
-    const supabase = supabaseClient();
-
-    if (!supabase) {
-      setMessage("Configuration Supabase manquante.");
-      return;
-    }
-
-    setLoading(true);
-
     try {
-      const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/fr/reinitialiser-mot-de-passe`
-          : undefined;
-
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo,
+      const res = await fetch("/api/client-portal/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        setMessage(error.message || "Erreur pendant l’envoi du lien.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data?.error || "Erreur lors de l’envoi du lien.");
         return;
       }
 
-      setMessage("Lien de réinitialisation envoyé. Vérifie ta boîte email.");
+      setMessage("Un lien de réinitialisation vient d’être envoyé à votre adresse email.");
+    } catch {
+      setMessage("Impossible de contacter le serveur. Vérifiez le déploiement Vercel.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F7FA] text-[#111827]">
-      <section className="mx-auto flex min-h-screen max-w-[560px] items-center px-6 py-10">
-        <div className="w-full rounded-[2rem] bg-white p-7">
-          <a href="/fr/connexion" className="text-sm font-black text-[#F15A24]">
-            ← Retour connexion
-          </a>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#F4F7FA",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "32px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <section
+        style={{
+          width: "100%",
+          maxWidth: "520px",
+          background: "#fff",
+          borderRadius: "28px",
+          padding: "42px 28px",
+        }}
+      >
+        <Link
+          href="/fr/connexion"
+          style={{
+            color: "#0F172A",
+            fontWeight: 800,
+            textDecoration: "none",
+          }}
+        >
+          ← Retour connexion
+        </Link>
 
-          <div className="mt-8 text-[30px] font-black uppercase leading-none tracking-[-0.06em]">
-            <span className="text-[#123A63]">VEMO</span>
-            <span className="text-[#F15A24]">TECH</span>
+        <div style={{ marginTop: "32px", marginBottom: "32px" }}>
+          <div style={{ fontSize: "28px", fontWeight: 900, color: "#123A63" }}>
+            VEMO<span style={{ color: "#F15A24" }}>TECH</span>
           </div>
-
-          <p className="mt-3 text-[10px] font-black uppercase tracking-[0.30em] text-slate-400">
-            Espace client
-          </p>
-
-          <h1 className="mt-8 text-[34px] font-black tracking-[-0.06em]">
-            Mot de passe oublié
-          </h1>
-
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-            Saisis ton email. Tu recevras un lien sécurisé pour choisir un nouveau mot de passe.
-          </p>
-
-          <div className="mt-6 space-y-4">
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              placeholder="Email client"
-              className="h-[54px] w-full rounded-[16px] border border-[#E6EDF5] bg-white px-4 text-sm font-bold text-[#123A63] outline-none focus:border-[#F15A24]"
-            />
-
-            <button
-              type="button"
-              onClick={sendResetLink}
-              disabled={loading}
-              className="h-[54px] w-full rounded-[16px] bg-[#F15A24] text-sm font-black text-white transition hover:bg-[#DB4F1C] disabled:opacity-60"
-            >
-              {loading ? "Envoi..." : "Envoyer le lien"}
-            </button>
-
-            {message ? (
-              <div className="rounded-[16px] border border-[#E6EDF5] bg-[#F8FAFC] px-4 py-3 text-sm font-black text-[#123A63]">
-                {message}
-              </div>
-            ) : null}
+          <div
+            style={{
+              marginTop: "8px",
+              fontSize: "11px",
+              fontWeight: 900,
+              letterSpacing: "6px",
+              color: "#8AA0BF",
+            }}
+          >
+            ESPACE CLIENT
           </div>
         </div>
+
+        <h1
+          style={{
+            margin: "0 0 16px",
+            color: "#0F172A",
+            fontSize: "34px",
+            lineHeight: 1.1,
+          }}
+        >
+          Mot de passe oublié
+        </h1>
+
+        <p
+          style={{
+            margin: "0 0 26px",
+            color: "#5B6F91",
+            fontWeight: 800,
+            lineHeight: 1.6,
+          }}
+        >
+          Saisis ton email. Tu recevras un lien sécurisé pour choisir un nouveau mot de passe.
+        </p>
+
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="adresse@email.com"
+          type="email"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            height: "54px",
+            border: "1px solid #DDE7F2",
+            borderRadius: "16px",
+            padding: "0 16px",
+            color: "#123A63",
+            fontWeight: 800,
+            fontSize: "15px",
+            outline: "none",
+          }}
+        />
+
+        <button
+          onClick={submit}
+          disabled={loading || !email}
+          style={{
+            marginTop: "16px",
+            width: "100%",
+            height: "54px",
+            border: 0,
+            borderRadius: "16px",
+            background: "#F15A24",
+            color: "#fff",
+            fontWeight: 900,
+            cursor: loading ? "default" : "pointer",
+            opacity: loading || !email ? 0.65 : 1,
+          }}
+        >
+          {loading ? "Envoi en cours..." : "Envoyer le lien"}
+        </button>
+
+        {message && (
+          <div
+            style={{
+              marginTop: "16px",
+              border: "1px solid #DDE7F2",
+              borderRadius: "14px",
+              padding: "14px 16px",
+              color: "#123A63",
+              background: "#F8FBFF",
+              fontWeight: 800,
+              lineHeight: 1.5,
+            }}
+          >
+            {message}
+          </div>
+        )}
       </section>
     </main>
   );
