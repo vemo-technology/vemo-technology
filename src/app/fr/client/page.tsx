@@ -77,8 +77,9 @@ export default async function ClientEmailConfirmationPage({ searchParams }: Prop
           </h1>
 
           <p style={{ margin: "18px 0 0", maxWidth: "760px", color: "#5B6F91", fontSize: "17px", fontWeight: 800, lineHeight: 1.65 }}>
-            Un email de confirmation vient d’être envoyé{email ? " à " : ""}
-            {email ? <strong style={{ color: "#123A63" }}>{email}</strong> : null}. Confirmez votre adresse email pour activer votre compte et accéder à votre espace client.
+            Confirmez votre email{email ? " " : ""}
+            {email ? <strong style={{ color: "#123A63" }}>{email}</strong> : null}
+            pour activer votre espace client.
           </p>
 
           <div style={{ marginTop: "30px", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "14px" }}>

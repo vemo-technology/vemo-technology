@@ -615,7 +615,7 @@ export default function VemoAdminClientClean() {
                       <div className="flex justify-end gap-2">
                         <a
                           href={adminDocumentActionUrl(doc, "view")}
-                          target="_blank"
+                          target="_self"
                           title="Ouvrir"
                           aria-label="Ouvrir"
                           className="inline-flex h-10 w-10 items-center justify-center rounded-[13px] border border-[#E8E2DC] bg-white text-[#123A63]  transition hover:border-[#F15A24]/30 hover:bg-[#FFF7F2] hover:text-[#F15A24]"

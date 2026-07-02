@@ -279,7 +279,7 @@ async function saveDossier(body: any) {
       sender: "VEMO Technology",
       message:
         paymentMethod === "bank_transfer"
-          ? "Dossier créé. Paiement par virement en attente de vérification."
+          ? "En attente de vérification du justificatif de paiement."
           : "Dossier créé. Paiement par carte en attente.",
       message_type: "info",
       created_at: now,

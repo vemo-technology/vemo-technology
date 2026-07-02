@@ -37,7 +37,7 @@ export default function VemoPaymentSuccessClient({ lang }: { lang: "fr" | "en" }
 
         <div className="vemo-payment-success-actions">
           {sessionId && (
-            <a href={`/api/llc/receipt?session_id=${encodeURIComponent(sessionId)}`} target="_blank" rel="noreferrer">
+            <a href={`/api/llc/receipt?session_id=${encodeURIComponent(sessionId)}`} target="_self" rel="noreferrer">
               {lang === "fr" ? "Télécharger le reçu Stripe" : "Download Stripe receipt"}
             </a>
           )}

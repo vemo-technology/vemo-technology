@@ -49,7 +49,7 @@ export default function BankTransferPage() {
               </p>
               <a
                 href="https://wa.me/212708069471"
-                target="_blank"
+                target="_self"
                 className="mt-5 inline-flex rounded-[14px] bg-[#25D366] px-5 py-4 text-sm font-black text-white"
               >
                 Contacter via WhatsApp →

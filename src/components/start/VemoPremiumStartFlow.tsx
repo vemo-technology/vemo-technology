@@ -203,14 +203,14 @@ const copy = {
     upload: "Justificatif de virement",
     whatsapp: "Envoyer la preuve via WhatsApp",
     stripeRedirect: "Vous serez redirigé vers la page sécurisée Stripe.",
-    bankNote: "Votre dossier passera en attente de vérification après l’envoi du justificatif.",
+    bankNote: "En attente de vérification du justificatif de paiement.",
     searchCountry: "Rechercher un pays...",
     searchDial: "Rechercher indicatif...",
     nm: "New Mexico",
     wy: "Wyoming",
     nmDesc: "Confidentialité, coût optimisé, structure simple.",
     wyDesc: "Image corporate plus forte, traitement généralement plus rapide.",
-    success: "Dossier enregistré. Un email de confirmation a été envoyé.",
+    success: "",
   },
   en: {
     steps: ["State & package", "LLC name", "Activity", "Owner", "Country & phone", "Structure", "Services", "Payment"],
@@ -464,7 +464,7 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
           return;
         }
 
-        window.open(data.url, "_blank", "noopener,noreferrer");
+        window.location.href = data.url;
         setSubmitted(true);
         return;
       }
@@ -715,7 +715,7 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
                         <a
                           className="vemo-flow-whatsapp"
                           href={`https://wa.me/212708069471?text=${encodeURIComponent("Bonjour VEMO Technology, voici mon justificatif de virement pour la création LLC.")}`}
-                          target="_blank"
+                          target="_self"
                           rel="noreferrer"
                         >
                           {t.whatsapp}

@@ -481,7 +481,7 @@ const StatPill = ({ value }: { value: string }) => (
                       <div className="flex items-center gap-2">
                         <a
                           href={docUrl}
-                          target="_blank"
+                          target="_self"
                           rel="noreferrer"
                           title={isFr ? "Ouvrir" : "Open"}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#DDE7F2] bg-white text-[#123A63] transition hover:border-[#F15A24] hover:text-[#F15A24]"

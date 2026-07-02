@@ -104,7 +104,7 @@ export default function ContactEnPage() {
 
                 <a
                   href="https://wa.me/212708069471"
-                  target="_blank"
+                  target="_self"
                   rel="noreferrer"
                   className="rounded-[14px] border border-[#DDE7F2] bg-white px-6 py-3.5 text-sm font-black text-[#123A63] hover:border-[#F15A24] hover:text-[#F15A24]"
                 >

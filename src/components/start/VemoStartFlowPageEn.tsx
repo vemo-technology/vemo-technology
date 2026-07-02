@@ -1529,7 +1529,7 @@ export default function VemoStartFlowPage({ lang = "fr" }: { lang?: Lang }) {
 
                           <a
                             href="https://wa.me/"
-                            target="_blank"
+                            target="_self"
                             rel="noreferrer"
                             className="inline-flex h-[52px] min-w-[170px] items-center justify-center rounded-[16px] border border-[#F15A24] bg-[#F15A24] px-5 text-sm font-black text-white transition hover:bg-[#DB4F1C]"
                           >

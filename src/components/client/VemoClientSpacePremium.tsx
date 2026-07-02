@@ -435,7 +435,7 @@ export default function VemoClientSpacePremium({ lang = "fr" }: { lang?: Lang })
                       <div className="flex justify-start gap-2 md:justify-end">
                         <a
                           href={hasDocumentFile(doc) ? documentActionUrl(doc, "view") : "#"}
-                          target="_blank"
+                          target="_self"
                           rel="noreferrer"
                           aria-disabled={!hasDocumentFile(doc)}
                           className={`inline-flex h-10 items-center justify-center rounded-[13px] border px-4 text-xs font-black transition ${

@@ -19,7 +19,7 @@ function ConfirmationEmailContent() {
     setReason(params.get("reason") || "");
   }, []);
 
-  const isBankPending = payment === "virement_en_attente" || payment === "bank_transfer_pending";
+  const isBankPending = payment === "verification_justificatif" || payment === "bank_transfer_pending";
   const hasMailError =
     mailStatus === "signup_failed" ||
     mailStatus === "resend_failed" ||

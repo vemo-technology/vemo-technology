@@ -283,7 +283,7 @@ async function saveClientStatus(next: any) {
 
             <a
               href={`/fr/espace-client?email=${encodeURIComponent(email)}`}
-              target="_blank"
+              target="_self"
               className="inline-flex h-[46px] items-center justify-center rounded-[15px] border border-[#E6EDF5] bg-white px-5 text-sm font-black text-[#123A63] transition hover:border-[#F15A24]"
             >
               Voir espace client
@@ -457,7 +457,7 @@ async function saveClientStatus(next: any) {
                           {url ? (
                             <a
                               href={url}
-                              target="_blank"
+                              target="_self"
                               rel="noreferrer"
                               title="Ouvrir"
                               className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#F15A24] text-white transition hover:bg-[#DB4F1C]"

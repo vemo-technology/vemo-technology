@@ -352,7 +352,7 @@ export default function EinPaymentLikeLlc({
 
                     <a
                       href="https://wa.me/212600000000"
-                      target="_blank"
+                      target="_self"
                       rel="noopener noreferrer"
                       className="rounded-[14px] bg-[#F15A24] px-5 py-3 text-sm font-black text-white hover:bg-[#DB4F1C]"
                     >

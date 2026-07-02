@@ -824,7 +824,7 @@ export default function VemoAdminDashboard() {
                                   {doc.file_url && (
                                     <a
                                       href={doc.file_url}
-                                      target="_blank"
+                                      target="_self"
                                       rel="noopener noreferrer"
                                       className="rounded-[14px] border border-[#E8E2DC] bg-white px-4 py-3 text-xs font-black text-[#123A63] transition hover:bg-[#FFF7F2] hover:text-[#F15A24]"
                                     >

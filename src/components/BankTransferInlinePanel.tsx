@@ -23,7 +23,7 @@ export default function BankTransferInlinePanel() {
 
       <a
         href={whatsappUrl}
-        target="_blank"
+        target="_self"
         rel="noopener noreferrer"
         className="mt-5 flex items-center justify-between rounded-[18px] border border-[#D8F3DC] bg-white px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_14px_35px_rgba(34,197,94,0.14)]"
       >

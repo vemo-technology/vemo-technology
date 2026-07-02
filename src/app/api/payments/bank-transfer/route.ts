@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.redirect(
-    new URL(`/fr/verification-compte?payment=virement_en_attente&email=${encodeURIComponent(client_email)}&name=${encodeURIComponent(client_name)}`, request.url),
+    new URL(`/fr/verification-compte?payment=verification_justificatif&email=${encodeURIComponent(client_email)}&name=${encodeURIComponent(client_name)}`, request.url),
     303
   );
 }

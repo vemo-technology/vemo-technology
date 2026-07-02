@@ -538,7 +538,7 @@ export default function ClientPortalPage({ lang }: { lang: Lang }) {
 
                               <a
                                 href={doc.file_url}
-                                target="_blank"
+                                target="_self"
                                 download
                                 className="rounded-2xl bg-[#F15A24] px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-900/20"
                               >
@@ -574,7 +574,7 @@ export default function ClientPortalPage({ lang }: { lang: Lang }) {
                   {selectedDocument?.file_url && (
                     <a
                       href={selectedDocument.file_url}
-                      target="_blank"
+                      target="_self"
                       className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-500 hover:text-[#F15A24]"
                     >
                       ↗
@@ -612,7 +612,7 @@ export default function ClientPortalPage({ lang }: { lang: Lang }) {
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <a
                         href={selectedDocument.file_url}
-                        target="_blank"
+                        target="_self"
                         className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center text-sm font-black text-[#F15A24]"
                       >
                         {t.openPreview}
@@ -620,7 +620,7 @@ export default function ClientPortalPage({ lang }: { lang: Lang }) {
 
                       <a
                         href={selectedDocument.file_url}
-                        target="_blank"
+                        target="_self"
                         download
                         className="rounded-2xl bg-[#F15A24] px-5 py-4 text-center text-sm font-black text-white shadow-lg shadow-orange-900/20"
                       >

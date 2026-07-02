@@ -560,7 +560,7 @@ export default function AdminOrderDetail() {
                             {document.signed_url && (
                               <a
                                 href={document.signed_url}
-                                target="_blank"
+                                target="_self"
                                 rel="noreferrer"
                                 className="rounded-xl bg-[#111a33] px-4 py-3 text-sm font-black text-white"
                               >
