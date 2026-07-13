@@ -65,7 +65,7 @@ function safeFeatures(packId: string, state: string) {
     if (Array.isArray(byState) && byState.length) return byState;
   } catch {}
   try {
-    const generic = getVemoLlcPackFeatures(packId as any);
+    const generic = getVemoLlcPackFeatures(packId as any, state as any);
     if (Array.isArray(generic) && generic.length) return generic;
   } catch {}
   const pack = (VEMO_LLC_PACKS as any[]).find((item) => item.id === packId);

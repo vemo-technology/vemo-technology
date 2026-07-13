@@ -4,15 +4,15 @@ import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 
-function checkAdmin(request: Request) {
+async function checkAdmin(request: Request) {
   return verifyAdminRequest(request);
 }
 
 export async function POST(request: Request) {
   try {
-    const auth = checkAdmin(request);
+    const auth = await checkAdmin(request);
 
-    if (!auth.ok) {
+    if (auth.ok === false) {
       return auth.response;
     }
 

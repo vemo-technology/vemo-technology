@@ -19,6 +19,7 @@ type ClientMessage = {
   subject?: string;
   message?: string;
   content?: string;
+  sender?: string;
   created_at?: string;
 };
 

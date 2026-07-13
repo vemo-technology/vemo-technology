@@ -351,7 +351,7 @@ export default function EinPaymentLikeLlc({
                     </div>
 
                     <a
-                      href="https://wa.me/212600000000"
+                      href="https://wa.me/212708069471"
                       target="_self"
                       rel="noopener noreferrer"
                       className="rounded-[14px] bg-[#F15A24] px-5 py-3 text-sm font-black text-white hover:bg-[#DB4F1C]"

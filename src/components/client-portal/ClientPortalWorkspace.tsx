@@ -30,6 +30,8 @@ type Tab = "status" | "documents" | "services" | "messages" | "account";
 
 type Props = {
   lang?: Lang;
+  email?: string;
+  tab?: Tab | "overview";
 };
 
 type ClientDocument = {
@@ -120,14 +122,19 @@ function FieldBox({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function ClientPortalWorkspace({ lang = "fr" }: Props) {
+export default function ClientPortalWorkspace({
+  lang = "fr",
+  email: emailProp = "",
+  tab,
+}: Props) {
   const isFr = lang === "fr";
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const email = searchParams.get("email") || "";
-  const initialTab = (searchParams.get("tab") || "status") as Tab;
+  const email = searchParams.get("email") || emailProp;
+  const tabFromParams = searchParams.get("tab") || tab || "status";
+  const initialTab = (tabFromParams === "overview" ? "status" : tabFromParams) as Tab;
 
   const [activeTab, setActiveTab] = useState<Tab>(
     ["status", "documents", "services", "messages", "account"].includes(initialTab) ? initialTab : "status"

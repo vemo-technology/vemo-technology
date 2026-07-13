@@ -10,8 +10,11 @@ async function sha256(value: string) {
 }
 
 async function expectedToken() {
-  const password = process.env.VEMO_ADMIN_PASSWORD || "VemoAdmin@2026";
-  const secret = process.env.VEMO_ADMIN_SECRET || "vemo-admin-local-secret-2026";
+  const password = process.env.VEMO_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "";
+  const secret = process.env.VEMO_ADMIN_SECRET || process.env.ADMIN_PASSWORD || "";
+
+  if (!password || !secret) return "";
+
   return sha256(`${password}:${secret}`);
 }
 

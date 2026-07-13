@@ -56,7 +56,7 @@ export default function StripePaymentPage() {
       return;
     }
 
-    window.location.href = data.url;
+    window.location.assign(data.url);
   }
 
   return (

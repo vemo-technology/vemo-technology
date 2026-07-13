@@ -402,7 +402,6 @@ export default function AdminClientPortalManager() {
     }
   }
 
-
   async function logoutAdmin() {
     const supabase = getSupabaseBrowser();
 
@@ -414,14 +413,6 @@ export default function AdminClientPortalManager() {
     loadClients();
   }, []);
 
-
-  async function logoutAdmin() {
-    const supabase = getSupabaseBrowser();
-
-    await supabase?.auth.signOut();
-
-    window.location.href = "/fr/admin/connexion";
-  }
   useEffect(() => {
     if (selectedEmail) {
       loadClientDetails(selectedEmail);

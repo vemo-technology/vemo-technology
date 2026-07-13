@@ -97,7 +97,8 @@ export async function POST(request: Request) {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
-      "http://localhost:3000";
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      new URL(request.url).origin;
 
     const referer = request.headers.get("referer") || "";
     const locale = referer.includes("/en") ? "en" : "fr";
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
           },
         },
       ],
-      return_url: `${appUrl}/${locale}/commencer/success?session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${appUrl}/${locale === "fr" ? "fr/commencer/success" : "en/commencer/success"}?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         orderId,
         companyName,

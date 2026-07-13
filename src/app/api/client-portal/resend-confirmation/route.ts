@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const origin =
       request.headers.get("origin") ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "http://localhost:3000";
+      "https://www.vemo-technology.com";
 
     const { error } = await supabase.auth.resend({
       type: "signup",

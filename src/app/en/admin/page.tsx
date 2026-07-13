@@ -14,21 +14,20 @@ type Row = {
 
 const fallbackRows: Row[] = [
   {
-    client: "ABDEL CH",
-    pack: "Premium",
+    client: "LLC file",
+    pack: "—",
     state: "New Mexico",
-    amount: "199 USD",
-    payment: "En vérification",
-    dossier: "En attente",
-    email: "sheikh.abderrahim1@gmail.com",
+    amount: "—",
+    payment: "Pending verification",
+    dossier: "Pending",
   },
   {
     client: "Client LLC",
     pack: "—",
     state: "—",
     amount: "—",
-    payment: "En vérification",
-    dossier: "En attente",
+    payment: "Pending verification",
+    dossier: "Pending",
   },
 ];
 

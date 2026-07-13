@@ -464,7 +464,7 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
           return;
         }
 
-        window.location.href = data.url;
+        window.location.assign(data.url);
         setSubmitted(true);
         return;
       }

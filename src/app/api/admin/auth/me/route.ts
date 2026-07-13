@@ -4,9 +4,9 @@ import { verifyAdminRequest } from "@/lib/adminAuth";
 export const runtime = "nodejs";
 
 export async function GET(request: Request): Promise<Response> {
-  const auth = verifyAdminRequest(request);
+  const auth = await verifyAdminRequest(request);
 
-  if (!auth.ok) {
+  if (auth.ok === false) {
     return auth.response;
   }
 

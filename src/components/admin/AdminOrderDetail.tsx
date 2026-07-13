@@ -114,6 +114,7 @@ export default function AdminOrderDetail() {
   const [documentType, setDocumentType] = useState("prepared_document");
   const [documentLabel, setDocumentLabel] = useState("Document préparé");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [replaceDocumentId] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [documentsLoading, setDocumentsLoading] = useState(false);
@@ -746,5 +747,4 @@ export default function AdminOrderDetail() {
     </main>
   );
 }
-
 

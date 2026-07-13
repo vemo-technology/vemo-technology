@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const adminCheck = await verifyAdminRequest(request);
 
-  if (!adminCheck.ok) {
+  if (adminCheck.ok === false) {
     return adminCheck.response;
   }
 

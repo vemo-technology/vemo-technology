@@ -11,13 +11,8 @@ function translateEnServiceLabel(value: string) {
 
   const dictionary: Record<string, string> = {
     "LLC formation documents": "LLC formation documents",
-    "LLC formation documents": "LLC formation documents",
     "EIN application": "EIN application",
     "US phone number included for 3 months": "US phone number included for 3 months",
-    "US phone number included for 3 months": "US phone number included for 3 months",
-    "Shopify included for 3 months + 1-year domain name": "Shopify included for 3 months + 1-year domain name",
-    "Shopify included for 3 months + 1-year domain name": "Shopify included for 3 months + 1-year domain name",
-    "Shopify included for 3 months + 1-year domain name": "Shopify included for 3 months + 1-year domain name",
     "Shopify included for 3 months + 1-year domain name": "Shopify included for 3 months + 1-year domain name",
     "Stripe / PayPal assistance": "Stripe / PayPal assistance",
     "Wise / Mercury / Payoneer assistance": "Wise / Mercury / Payoneer assistance",
@@ -53,7 +48,7 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const plans: Plan[] = VEMO_LLC_PACKS.map((pack) => ({
   id: pack.id,
   label: pack.label,
-  subtitle: pack.shortDescription,
+  subtitle: pack.description,
   features: pack.features,
   recommended: pack.recommended,
 }));

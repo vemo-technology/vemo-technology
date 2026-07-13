@@ -23,7 +23,7 @@ function getSupabaseAdmin() {
 export async function GET(request: Request) {
   try {
     const adminCheck = await verifyAdminRequest(request);
-    if (!adminCheck.ok) return adminCheck.response;
+    if (adminCheck.ok === false) return adminCheck.response;
 
     const supabase = getSupabaseAdmin();
 

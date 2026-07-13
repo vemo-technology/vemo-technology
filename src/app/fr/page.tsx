@@ -124,7 +124,7 @@ function Check() {
 function WhatsAppButton() {
   return (
     <a
-      href="https://wa.me/212600000000"
+      href="https://wa.me/212708069471"
       target="_self"
       rel="noopener noreferrer"
       aria-label="Contacter VEMO sur WhatsApp"

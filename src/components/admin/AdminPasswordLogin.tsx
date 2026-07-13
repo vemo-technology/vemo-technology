@@ -130,7 +130,6 @@ export default function AdminPasswordLogin({ lang }: Props) {
           <button
             type="submit"
             className="vemo-admin-login-button"
-            className="vemo-admin-login-button"
             style={{
               marginTop: 22,
               width: "100%",

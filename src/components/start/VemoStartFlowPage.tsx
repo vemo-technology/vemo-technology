@@ -25,7 +25,7 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 const plans: Plan[] = VEMO_LLC_PACKS.map((pack) => ({
   id: pack.id,
   label: pack.label,
-  subtitle: pack.shortDescription,
+  subtitle: pack.description,
   features: pack.features,
   recommended: pack.recommended,
 }));
