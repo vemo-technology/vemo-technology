@@ -88,7 +88,12 @@ export default function ClientLoginPage() {
 
       window.location.href = `/fr/espace-client?email=${encodeURIComponent(email.trim().toLowerCase())}`;
     } catch (e: any) {
-      setError(e?.message || "Erreur de connexion.");
+      const message = String(e?.message || "");
+      setError(
+        message.toLowerCase().includes("fetch failed")
+          ? "Impossible de joindre le service d’authentification. Réessayez dans quelques instants."
+          : message || "Erreur de connexion."
+      );
     } finally {
       setBusy(false);
     }

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabaseBrowser";
 
 export default function EnglishLoginPage() {
   const router = useRouter();
+  const params = useMemo(() => {
+    if (typeof window === "undefined") return new URLSearchParams();
+    return new URLSearchParams(window.location.search);
+  }, []);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,21 +32,26 @@ export default function EnglishLoginPage() {
         throw error;
       }
 
+      const normalizedEmail = email.trim().toLowerCase();
+
       if (data.session?.access_token) {
         await fetch("/api/client-portal/mark-session", {
           method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${data.session.access_token}`,
           },
-        });
+          body: JSON.stringify({ email: normalizedEmail }),
+        }).catch(() => null);
       }
 
-      router.push(`/en/client-portal?email=${encodeURIComponent(email)}`);
+      router.push(`/en/client-portal?email=${encodeURIComponent(normalizedEmail)}`);
     } catch (error) {
+      const rawMessage = error instanceof Error ? error.message : "";
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to sign in."
+        rawMessage.toLowerCase().includes("fetch failed")
+          ? "Unable to reach the authentication service. Please try again."
+          : rawMessage || "Email or password is incorrect."
       );
     } finally {
       setLoading(false);

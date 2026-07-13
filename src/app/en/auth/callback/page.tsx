@@ -9,7 +9,7 @@ function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/en/client-portal";
-  const [message, setMessage] = useState("Confirmation du compte...");
+  const [message, setMessage] = useState("Confirming your account...");
 
   useEffect(() => {
     async function handleCallback() {
@@ -23,23 +23,26 @@ function CallbackContent() {
         }
 
         const { data } = await supabase.auth.getSession();
+        const email = data.session?.user?.email || "";
 
         if (data.session?.access_token) {
           await fetch("/api/client-portal/mark-session", {
             method: "POST",
             headers: {
+              "Content-Type": "application/json",
               Authorization: `Bearer ${data.session.access_token}`,
             },
+            body: JSON.stringify({ email }),
           });
         }
 
         setMessage("Account confirmed. Redirecting...");
-        router.replace(next);
+        router.replace(`${next}${email ? `?email=${encodeURIComponent(email)}` : ""}`);
       } catch (error) {
         setMessage(
           error instanceof Error
             ? error.message
-            : "Impossible de confirmer le compte."
+            : "Unable to confirm the account."
         );
       }
     }
@@ -66,15 +69,13 @@ function CallbackContent() {
 export default function AuthCallbackPage() {
   return (
     <main className="min-h-screen bg-[#f4f7fa] text-slate-950">
-      <SiteHeader lang="fr" active="start" />
+      <SiteHeader lang="en" active="start" />
 
-      <Suspense fallback={<section className="p-10">Chargement...</section>}>
+      <Suspense fallback={<section className="p-10">Loading...</section>}>
         <CallbackContent />
       </Suspense>
 
-      <SiteFooter lang="fr" />
+      <SiteFooter lang="en" />
     </main>
   );
 }
-
-

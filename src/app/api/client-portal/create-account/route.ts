@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://www.vemo-technology.com";
 
-    const redirectTo = `${origin}/fr/espace-client?email=${encodeURIComponent(email)}`;
+    const redirectTo = `${origin}/fr/auth/callback?next=${encodeURIComponent("/fr/espace-client")}`;
 
     const { data, error } = await supabase.auth.signUp({
       email,

@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       type: "signup",
       email,
       options: {
-        emailRedirectTo: `${origin}/fr/connexion?email=${encodeURIComponent(email)}`,
+        emailRedirectTo: `${origin}/fr/auth/callback?next=${encodeURIComponent("/fr/espace-client")}`,
       },
     });
 
