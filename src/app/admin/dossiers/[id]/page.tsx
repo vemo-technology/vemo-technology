@@ -1,5 +1,5 @@
-import AdminOrderDetail from "@/components/admin/AdminOrderDetail";
+import { redirect } from "next/navigation";
 
 export default function AdminDossierDetailPage() {
-  return <AdminOrderDetail />;
+  redirect("/fr/admin");
 }

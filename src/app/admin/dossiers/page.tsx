@@ -1,7 +1,7 @@
-import AdminOrdersList from "@/components/admin/AdminOrdersList";
+import { redirect } from "next/navigation";
 
 export default function AdminDossiersPage() {
-  return <AdminOrdersList />;
+  redirect("/fr/admin");
 }
 
 
