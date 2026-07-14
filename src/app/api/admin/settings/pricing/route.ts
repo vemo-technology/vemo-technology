@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 import fs from "fs/promises";
 import path from "path";
 
@@ -36,6 +37,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   try {
     const body = await request.json();
 

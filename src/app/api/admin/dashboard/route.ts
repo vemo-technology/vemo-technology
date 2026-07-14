@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import { NextResponse } from "next/server";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
@@ -13,7 +14,10 @@ function adminClient() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   const supabase = adminClient();
 
   if (!supabase) {

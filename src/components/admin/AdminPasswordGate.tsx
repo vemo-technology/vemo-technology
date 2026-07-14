@@ -3,9 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-const ADMIN_PASSWORD = "123456";
-const STORAGE_KEY = "vemo_admin_authenticated";
-
 function AdminLogo() {
   return (
     <div>
@@ -57,12 +54,11 @@ export default function AdminPasswordGate({
   }, [isFr]);
 
   useEffect(() => {
-    const ok =
-      window.localStorage.getItem(STORAGE_KEY) === "yes" ||
-      document.cookie.includes("vemo_admin_authenticated=yes");
-
-    setAuthenticated(ok);
-    setReady(true);
+    fetch("/api/admin/auth/status", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((result) => setAuthenticated(result.ok === true))
+      .catch(() => setAuthenticated(false))
+      .finally(() => setReady(true));
   }, []);
 
   useEffect(() => {
@@ -80,11 +76,10 @@ export default function AdminPasswordGate({
         event.preventDefault();
         event.stopPropagation();
 
-        window.localStorage.removeItem(STORAGE_KEY);
-        document.cookie = "vemo_admin_authenticated=; Max-Age=0; path=/";
-
-        setAuthenticated(false);
-        router.push(isFr ? "/fr/admin" : "/en/admin");
+        fetch("/api/admin/auth/logout", { method: "POST" }).finally(() => {
+          setAuthenticated(false);
+          router.push(isFr ? "/fr/admin" : "/en/admin");
+        });
       }
     }
 
@@ -106,16 +101,19 @@ export default function AdminPasswordGate({
     router.push(isFr ? "/en/admin" : "/fr/admin");
   }
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (password.trim() !== ADMIN_PASSWORD) {
+    const response = await fetch("/api/admin/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) {
       setError(t.error);
       return;
     }
-
-    window.localStorage.setItem(STORAGE_KEY, "yes");
-    document.cookie = "vemo_admin_authenticated=yes; path=/; max-age=86400; SameSite=Lax";
 
     setAuthenticated(true);
     setPassword("");

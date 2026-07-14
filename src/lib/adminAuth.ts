@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
 type AdminOk = {
   ok: true;
@@ -13,6 +14,31 @@ type AdminFail = {
 };
 
 const ADMIN_COOKIE_NAME = "vemo_admin_session";
+
+function getPasswordSessionToken() {
+  const password = process.env.VEMO_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "";
+  const secret = process.env.VEMO_ADMIN_SECRET || process.env.ADMIN_PASSWORD || "";
+
+  if (!password || !secret) return "";
+
+  return crypto.createHash("sha256").update(`${password}:${secret}`).digest("hex");
+}
+
+function hasValidPasswordSession(request: Request) {
+  const expected = getPasswordSessionToken();
+  if (!expected) return false;
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  const token = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${ADMIN_COOKIE_NAME}=`))
+    ?.slice(ADMIN_COOKIE_NAME.length + 1);
+
+  if (!token || token.length !== expected.length) return false;
+
+  return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+}
 
 function getBearerToken(request: Request) {
   const authorization = request.headers.get("authorization") || "";
@@ -50,6 +76,14 @@ function getSupabaseAdmin() {
 export async function verifyAdminRequest(
   request: Request
 ): Promise<AdminOk | AdminFail> {
+  if (hasValidPasswordSession(request)) {
+    return {
+      ok: true,
+      email: "password-admin",
+      user: null,
+    };
+  }
+
   const supabase = getSupabaseAdmin();
 
   if (!supabase) {

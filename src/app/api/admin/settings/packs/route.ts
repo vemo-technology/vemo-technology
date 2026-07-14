@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   const body = await request.json().catch(() => null);
   const packs = Array.isArray(body?.packs) ? body.packs : null;
 
