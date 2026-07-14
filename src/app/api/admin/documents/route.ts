@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +44,9 @@ async function insertMessage(email: string, message: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   try {
     const email = request.nextUrl.searchParams.get("email") || "";
 
@@ -80,6 +84,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   try {
     const form = await request.formData();
 
@@ -191,6 +198,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   try {
     const body = await request.json().catch(() => ({}));
     const id = String(body.id || "");

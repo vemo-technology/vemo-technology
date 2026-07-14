@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -170,7 +171,10 @@ function betterValue(oldValue: any, newValue: any) {
   return newValue;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   try {
     const supabase = supabaseAdmin();
 

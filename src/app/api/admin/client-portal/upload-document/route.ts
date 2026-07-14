@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { dirname, extname, join } from "path";
 
@@ -40,6 +41,9 @@ function defaultPortal(email: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   const form = await request.formData();
 
   const email = String(form.get("email") || "");

@@ -2,6 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,9 @@ function adminClient() {
 }
 
 export async function POST(request: Request) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   const supabase = adminClient();
   if (!supabase) {
     return NextResponse.json({ ok: false, error: "Supabase admin non configuré." }, { status: 500 });

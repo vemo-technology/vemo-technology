@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import { dirname, join } from "path";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,9 @@ function dossierName(email: string, portal: any) {
 }
 
 export async function GET(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   const email = request.nextUrl.searchParams.get("email") || "";
   const data = await readData();
 
@@ -88,6 +92,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const adminCheck = await verifyAdminRequest(request);
+  if (adminCheck.ok === false) return adminCheck.response;
+
   const body = await request.json();
 
   const email = String(body.email || "");

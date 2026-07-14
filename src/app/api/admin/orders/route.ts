@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,16 +18,10 @@ function getAdminClient() {
   });
 }
 
-async function isAdminAuthenticated() {
-  const cookieStore = await cookies();
-  return cookieStore.get("vemo_admin_session")?.value === "ok";
-}
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    if (!(await isAdminAuthenticated())) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const adminCheck = await verifyAdminRequest(request);
+    if (adminCheck.ok === false) return adminCheck.response;
 
     const supabase = getAdminClient();
 

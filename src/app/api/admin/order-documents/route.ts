@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { verifyAdminRequest } from "@/lib/adminAuth";
-import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-function checkAdmin(request: Request) {
-  return verifyAdminRequest(request);
-}
 export const dynamic = "force-dynamic";
 
 function getAdminClient() {
@@ -26,11 +22,6 @@ function getAdminClient() {
   });
 }
 
-async function isAdminAuthenticated() {
-  const cookieStore = await cookies();
-  return cookieStore.get("vemo_admin_session")?.value === "ok";
-}
-
 function cleanFileName(fileName: string) {
   return fileName
     .normalize("NFD")
@@ -42,9 +33,8 @@ function cleanFileName(fileName: string) {
 
 export async function GET(request: Request) {
   try {
-    if (!(await isAdminAuthenticated())) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const adminCheck = await verifyAdminRequest(request);
+    if (adminCheck.ok === false) return adminCheck.response;
 
     const { searchParams } = new URL(request.url);
     const orderId = String(searchParams.get("orderId") || "");
@@ -88,9 +78,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    if (!(await isAdminAuthenticated())) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const adminCheck = await verifyAdminRequest(request);
+    if (adminCheck.ok === false) return adminCheck.response;
 
     const { searchParams } = new URL(request.url);
     const orderId = String(searchParams.get("orderId") || "");
@@ -184,9 +173,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    if (!(await isAdminAuthenticated())) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const adminCheck = await verifyAdminRequest(request);
+    if (adminCheck.ok === false) return adminCheck.response;
 
     const body = await request.json();
 
@@ -236,9 +224,8 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    if (!(await isAdminAuthenticated())) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const adminCheck = await verifyAdminRequest(request);
+    if (adminCheck.ok === false) return adminCheck.response;
 
     const { searchParams } = new URL(request.url);
     const documentId = String(searchParams.get("documentId") || "");
