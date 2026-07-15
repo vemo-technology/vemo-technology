@@ -68,7 +68,7 @@ function AccountCreationContent() {
                 {receiptUrl ? (
                   <a
                     href={receiptUrl}
-                    target="_self"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="mt-4 inline-flex rounded-[16px] border border-[#F15A24] bg-white px-5 py-3 text-sm font-black text-[#F15A24] transition hover:bg-[#FFF7F2]"
                   >

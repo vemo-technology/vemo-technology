@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || "https://www.vemo-technology.com";
-}
-
-function fromEmail() {
-  return (
-    process.env.MAIL_FROM ||
-    process.env.EMAIL_FROM ||
-    "VEMO Technology <contact@vemo-technology.com>"
-  );
 }
 
 export async function GET() {
@@ -31,65 +24,33 @@ export async function POST(request: Request) {
       );
     }
 
-    const resendKey = process.env.RESEND_API_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-    if (!resendKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
-        { error: "RESEND_API_KEY manquante dans Vercel." },
+        { error: "Configuration Supabase manquante." },
         { status: 500 }
       );
     }
 
-    const resetUrl = `${siteUrl()}/fr/reinitialiser-mot-de-passe?email=${encodeURIComponent(email)}`;
-
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: fromEmail(),
-        to: email,
-        subject: "Réinitialisation de votre mot de passe VEMO Technology",
-        html: `
-          <div style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6">
-            <h2>Réinitialisation de votre mot de passe</h2>
-            <p>Vous avez demandé à réinitialiser votre mot de passe VEMO Technology.</p>
-            <p>
-              <a href="${resetUrl}" style="display:inline-block;background:#F15A24;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">
-                Choisir un nouveau mot de passe
-              </a>
-            </p>
-            <p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>
-          </div>
-        `,
-      }),
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
+    const redirectTo = `${siteUrl()}/fr/reinitialiser-mot-de-passe`;
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim().toLowerCase(),
+      { redirectTo }
+    );
 
-    const text = await response.text();
-    let data: { message?: string; error?: string; raw?: string } | null = null;
-
-    try {
-      data = text ? JSON.parse(text) : null;
-    } catch {
-      data = { raw: text };
-    }
-
-    if (!response.ok) {
+    if (error) {
       return NextResponse.json(
-        {
-          error:
-            data?.message ||
-            data?.error ||
-            "Email non envoyé. Vérifiez Resend, MAIL_FROM / EMAIL_FROM et le domaine.",
-          details: data,
-        },
+        { error: error.message || "Impossible d’envoyer l’email de réinitialisation." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ ok: true, data });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json(
       {

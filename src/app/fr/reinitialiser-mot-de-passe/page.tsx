@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,46 @@ function supabaseClient() {
 }
 
 export default function ResetPasswordPage() {
+  const supabase = useMemo(() => supabaseClient(), []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [sessionReady, setSessionReady] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) {
+      setMessage("Configuration Supabase manquante.");
+      return;
+    }
+
+    let active = true;
+
+    async function initializeRecovery() {
+      const code = new URL(window.location.href).searchParams.get("code");
+
+      if (code) {
+        const { error } = await supabase!.auth.exchangeCodeForSession(code);
+        if (error) {
+          if (active) setMessage("Lien de réinitialisation invalide ou expiré.");
+          return;
+        }
+      }
+
+      const { data } = await supabase!.auth.getSession();
+      if (active) {
+        setSessionReady(Boolean(data.session));
+        if (!data.session) {
+          setMessage("Ouvrez cette page depuis le lien reçu par email.");
+        }
+      }
+    }
+
+    void initializeRecovery();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
 
   async function updatePassword() {
     setMessage("");
@@ -32,8 +68,6 @@ export default function ResetPasswordPage() {
       setMessage("Les deux mots de passe ne correspondent pas.");
       return;
     }
-
-    const supabase = supabaseClient();
 
     if (!supabase) {
       setMessage("Configuration Supabase manquante.");
@@ -99,7 +133,7 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={updatePassword}
-              disabled={loading}
+              disabled={loading || !sessionReady}
               className="h-[54px] w-full rounded-[16px] bg-[#F15A24] text-sm font-black text-white transition hover:bg-[#DB4F1C] disabled:opacity-60"
             >
               {loading ? "Mise à jour..." : "Réinitialiser"}

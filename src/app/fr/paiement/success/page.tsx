@@ -59,6 +59,8 @@ export default async function PaymentSuccessPage({ searchParams }: Props) {
           <div style={{ marginTop: "34px", display: "flex", alignItems: "center", justifyContent: "center", gap: "14px", flexWrap: "wrap" }}>
             <a
               href={receiptHref}
+              target="_blank"
+              rel="noopener noreferrer"
               style={{
                 minHeight: "52px",
                 padding: "0 22px",

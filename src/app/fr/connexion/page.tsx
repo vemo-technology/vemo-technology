@@ -82,7 +82,10 @@ export default function ClientLoginPage() {
 
       await fetch("/api/client-portal/mark-session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session?.access_token || ""}`,
+        },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       }).catch(() => null);
 
