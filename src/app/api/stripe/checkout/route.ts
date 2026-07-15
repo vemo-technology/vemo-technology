@@ -11,6 +11,7 @@ export async function POST(request: Request) {
   const amount = Math.max(1, Number(body.amount || 179));
   const packageName = String(body.package_name || "New Mexico Standard");
   const email = String(body.email || body.client_email || "").trim().toLowerCase();
+  const lang = body.lang === "en" ? "en" : "fr";
 
   const secretKey = process.env.STRIPE_SECRET_KEY || "";
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
@@ -27,8 +28,9 @@ export async function POST(request: Request) {
 
   const params = new URLSearchParams();
   params.set("mode", "payment");
-  params.set("success_url", origin + "/fr/verification-compte?payment=stripe_success&session_id={CHECKOUT_SESSION_ID}");
-  params.set("cancel_url", origin + "/fr/stripe?payment=cancelled");
+  const successPath = lang === "en" ? "/en/account-verification" : "/fr/verification-compte";
+  params.set("success_url", origin + `${successPath}?payment=stripe_success&session_id={CHECKOUT_SESSION_ID}`);
+  params.set("cancel_url", origin + `/${lang}/stripe?payment=cancelled`);
 
   if (email.includes("@")) {
     params.set("customer_email", email);

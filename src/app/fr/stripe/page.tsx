@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { PaymentHero, VemoCard, VemoInput, VemoPaymentShell } from "@/components/VemoPaymentShell";
 
 export default function StripePaymentPage() {
+  const isEn = usePathname().startsWith("/en");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -45,6 +47,7 @@ export default function StripePaymentPage() {
         amount: form.get("amount"),
         email: form.get("email"),
         client_name: form.get("client_name"),
+        lang: isEn ? "en" : "fr",
       }),
     });
 
@@ -52,7 +55,7 @@ export default function StripePaymentPage() {
 
     if (!response.ok || !data.url) {
       setLoading(false);
-      setError(data.message || "Erreur Stripe. Vérifie STRIPE_SECRET_KEY dans .env.local.");
+      setError(data.message || (isEn ? "Stripe error. Please try again." : "Erreur Stripe. Veuillez réessayer."));
       return;
     }
 
@@ -60,30 +63,30 @@ export default function StripePaymentPage() {
   }
 
   return (
-    <VemoPaymentShell lang="fr">
+    <VemoPaymentShell lang={isEn ? "en" : "fr"}>
       <PaymentHero
-        eyebrow="Paiement carte"
-        title="Paiement sécurisé"
-        text="Confirmez votre pack, votre email de commande et continuez vers le paiement en ligne."
+        eyebrow={isEn ? "Card payment" : "Paiement carte"}
+        title={isEn ? "Secure payment" : "Paiement sécurisé"}
+        text={isEn ? "Confirm your plan and order email, then continue to online payment." : "Confirmez votre pack, votre email de commande et continuez vers le paiement en ligne."}
       />
 
       <main className="px-6 pb-20">
         <VemoCard className="mx-auto grid max-w-5xl gap-8 p-8 lg:grid-cols-[1fr_.85fr]">
           <div>
-            <h2 className="text-3xl font-black text-[#123A63]">Activation rapide</h2>
+            <h2 className="text-3xl font-black text-[#123A63]">{isEn ? "Quick activation" : "Activation rapide"}</h2>
             <p className="mt-4 text-base font-semibold leading-8 text-slate-600">
-              Après paiement, vous serez redirigé vers la page de création ou vérification du compte client.
+              {isEn ? "After payment, you will be redirected to create or verify your client account." : "Après paiement, vous serez redirigé vers la page de création ou vérification du compte client."}
             </p>
 
             <div className="mt-8 rounded-[18px] border border-[#FFD2C2] bg-[#FFF7F1] p-6">
               <div className="text-xs font-black uppercase tracking-[0.16em] text-[#F15A24]">
-                Pack sélectionné
+                {isEn ? "Selected plan" : "Pack sélectionné"}
               </div>
               <div className="mt-3 flex items-end justify-between gap-4">
                 <div>
                   <div className="text-2xl font-black text-[#202838]">{packName}</div>
                   <div className="mt-1 text-sm font-semibold text-slate-500">
-                    Frais de dépôt inclus
+                    {isEn ? "Filing fees included" : "Frais de dépôt inclus"}
                   </div>
                 </div>
                 <div className="whitespace-nowrap text-4xl font-black text-[#F15A24]">
@@ -95,10 +98,10 @@ export default function StripePaymentPage() {
 
           <form onSubmit={startStripe} className="rounded-[18px] bg-[#F6F8FB] p-6">
             <div className="grid gap-4">
-              <VemoInput name="client_name" required value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nom complet" />
-              <VemoInput name="email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email de commande" />
-              <VemoInput name="package_name" value={packName} onChange={(e) => setPackName(e.target.value)} placeholder="Pack" />
-              <VemoInput name="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Montant USD" />
+              <VemoInput name="client_name" required value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={isEn ? "Full name" : "Nom complet"} />
+              <VemoInput name="email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={isEn ? "Order email" : "Email de commande"} />
+              <VemoInput name="package_name" value={packName} onChange={(e) => setPackName(e.target.value)} placeholder={isEn ? "Plan" : "Pack"} />
+              <VemoInput name="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={isEn ? "Amount USD" : "Montant USD"} />
               <input type="hidden" name="currency" value={currency} />
 
               {error ? (
@@ -111,7 +114,7 @@ export default function StripePaymentPage() {
                 disabled={loading}
                 className="mt-2 h-13 min-h-[52px] rounded-[14px] bg-[#F15A24] text-sm font-black text-white transition hover:bg-[#D94A1B] disabled:opacity-60"
               >
-                {loading ? "Redirection..." : "Payer par carte →"}
+                {loading ? (isEn ? "Redirecting..." : "Redirection...") : (isEn ? "Pay by card →" : "Payer par carte →")}
               </button>
             </div>
           </form>

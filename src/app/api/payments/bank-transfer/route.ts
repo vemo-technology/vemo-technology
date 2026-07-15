@@ -37,7 +37,7 @@ function getSupabaseAdmin() {
 export async function POST(request: Request) {
   const form = await request.formData();
 
-  const lang = clean(form.get("lang")) || "fr";
+  const lang = clean(form.get("lang")) === "en" ? "en" : "fr";
 
   const client_email =
     clean(form.get("client_email")).toLowerCase() ||
@@ -54,7 +54,8 @@ export async function POST(request: Request) {
   const file = form.get("proof_file") as File | null;
 
   if (!client_email || !client_email.includes("@")) {
-    return NextResponse.redirect(new URL("/fr/commencer?error=email", request.url), 303);
+    const startPath = lang === "en" ? "/en/start" : "/fr/commencer";
+    return NextResponse.redirect(new URL(`${startPath}?error=email`, request.url), 303);
   }
 
   let proof_url = "";
@@ -90,8 +91,9 @@ export async function POST(request: Request) {
     }).then(() => null);
   }
 
+  const verificationPath = lang === "en" ? "/en/account-verification" : "/fr/verification-compte";
   return NextResponse.redirect(
-    new URL(`/fr/verification-compte?payment=verification_justificatif&email=${encodeURIComponent(client_email)}&name=${encodeURIComponent(client_name)}`, request.url),
+    new URL(`${verificationPath}?payment=verification_justificatif&email=${encodeURIComponent(client_email)}&name=${encodeURIComponent(client_name)}`, request.url),
     303
   );
 }

@@ -24,6 +24,17 @@ export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
+    const authorization = request.headers.get("authorization") || "";
+    const accessToken = authorization.startsWith("Bearer ")
+      ? authorization.slice(7).trim()
+      : "";
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { ok: false, error: "Session client requise." },
+        { status: 401 }
+      );
+    }
 
     if (!email || !email.includes("@")) {
       return NextResponse.json(
@@ -42,6 +53,16 @@ export async function POST(request: Request) {
             "Configuration Supabase manquante : NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY.",
         },
         { status: 500 }
+      );
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(accessToken);
+    const authenticatedEmail = userData.user?.email?.trim().toLowerCase() || "";
+
+    if (userError || !authenticatedEmail || authenticatedEmail !== email) {
+      return NextResponse.json(
+        { ok: false, error: "Session client invalide." },
+        { status: 401 }
       );
     }
 

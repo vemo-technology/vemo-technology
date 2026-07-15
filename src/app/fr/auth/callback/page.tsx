@@ -37,6 +37,7 @@ export default function AuthCallbackPage() {
         const next = url.searchParams.get("next") || "/fr/espace-client";
 
         let email = "";
+        let accessToken = "";
 
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -47,9 +48,11 @@ export default function AuthCallbackPage() {
           }
 
           email = data?.session?.user?.email || "";
+          accessToken = data?.session?.access_token || "";
         } else {
           const { data } = await supabase.auth.getSession();
           email = data?.session?.user?.email || "";
+          accessToken = data?.session?.access_token || "";
         }
 
         if (!email) {
@@ -64,6 +67,7 @@ export default function AuthCallbackPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             email,
