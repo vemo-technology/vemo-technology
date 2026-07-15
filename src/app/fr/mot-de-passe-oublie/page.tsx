@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+
+function supabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -13,27 +22,18 @@ export default function ForgotPasswordPage() {
     setMessage("");
 
     try {
-      const res = await fetch("/api/vemo/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const text = await res.text();
-      let data: { error?: string } = {};
-
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch {
-        data = { error: text };
-      }
-
-      if (!res.ok) {
-        setMessage(data?.error || `Erreur ${res.status}`);
+      const supabase = supabaseClient();
+      if (!supabase) {
+        setMessage("Configuration Supabase manquante.");
         return;
       }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        { redirectTo: `${window.location.origin}/fr/reinitialiser-mot-de-passe` }
+      );
+
+      if (error) throw error;
 
       setMessage("Un lien de réinitialisation vient d’être envoyé à votre adresse email.");
     } catch (error) {
