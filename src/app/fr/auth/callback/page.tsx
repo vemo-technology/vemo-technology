@@ -34,7 +34,13 @@ export default function AuthCallbackPage() {
 
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
-        const next = url.searchParams.get("next") || "/fr/espace-client";
+        const requestedNext = url.searchParams.get("next");
+        const next =
+          requestedNext &&
+          requestedNext.startsWith("/fr/") &&
+          !requestedNext.startsWith("//")
+            ? requestedNext
+            : "/fr/espace-client";
 
         let email = "";
         let accessToken = "";
@@ -77,7 +83,9 @@ export default function AuthCallbackPage() {
         setMessage("Email confirmé. Redirection vers votre espace client...");
 
         window.setTimeout(() => {
-          window.location.href = `${next}?email=${encodeURIComponent(email)}`;
+          const destination = new URL(next, window.location.origin);
+          destination.searchParams.set("email", email);
+          window.location.href = `${destination.pathname}${destination.search}${destination.hash}`;
         }, 900);
       } catch (error: any) {
         setMessage(error?.message || "Erreur pendant la confirmation email.");

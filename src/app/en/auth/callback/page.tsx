@@ -8,7 +8,13 @@ import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/en/client-portal";
+  const requestedNext = searchParams.get("next");
+  const next =
+    requestedNext &&
+    requestedNext.startsWith("/en/") &&
+    !requestedNext.startsWith("//")
+      ? requestedNext
+      : "/en/client-portal";
   const [message, setMessage] = useState("Confirming your account...");
 
   useEffect(() => {
@@ -37,7 +43,11 @@ function CallbackContent() {
         }
 
         setMessage("Account confirmed. Redirecting...");
-        router.replace(`${next}${email ? `?email=${encodeURIComponent(email)}` : ""}`);
+        const destination = new URL(next, window.location.origin);
+        if (email) destination.searchParams.set("email", email);
+        router.replace(
+          `${destination.pathname}${destination.search}${destination.hash}`
+        );
       } catch (error) {
         setMessage(
           error instanceof Error
