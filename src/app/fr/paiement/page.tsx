@@ -39,7 +39,7 @@ export default function PaymentChoicePage() {
               <li>✓ Référence de virement</li>
               <li>✓ Vérification admin avant activation</li>
             </ul>
-            <Link href="/fr/virement" className="mt-8 inline-flex rounded-[12px] border border-[#F15A24] bg-white px-7 py-4 text-sm font-black text-[#F15A24]">
+            <Link href="/fr/commencer?payment=transfer" className="mt-8 inline-flex rounded-[12px] border border-[#F15A24] bg-white px-7 py-4 text-sm font-black text-[#F15A24]">
               Payer par virement →
             </Link>
           </VemoCard>

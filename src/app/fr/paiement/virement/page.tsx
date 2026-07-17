@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function Page() {
-  redirect("/fr/virement");
+  redirect("/fr/commencer?payment=transfer&legacy=1");
 }

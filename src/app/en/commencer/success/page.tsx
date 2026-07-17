@@ -1,10 +1,43 @@
-import { Suspense } from "react";
-import PaymentSuccessPage from "@/components/PaymentSuccessPage";
+import { redirect } from "next/navigation";
 
-export default function EnglishPaymentSuccessPage() {
-  return (
-    <Suspense fallback={null}>
-      <PaymentSuccessPage lang="en" />
-    </Suspense>
-  );
+type SearchValue = string | string[] | undefined;
+
+type Props = {
+  searchParams?: Promise<Record<string, SearchValue>>;
+};
+
+function first(value: SearchValue) {
+  return Array.isArray(value) ? value[0] || "" : value || "";
+}
+
+export default async function Page({ searchParams }: Props) {
+  const params = searchParams ? await searchParams : {};
+
+  const method = [
+    first(params.payment_method),
+    first(params.method),
+    first(params.mode),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (/bank|transfer|virement|wire/.test(method)) {
+    redirect("/en/start?payment=transfer&legacy=1");
+  }
+
+  const targetParams = new URLSearchParams();
+
+  for (const key of [
+    "session_id",
+    "email",
+    "customer_email",
+    "payment_intent",
+  ]) {
+    const value = first(params[key]);
+    if (value) targetParams.set(key, value);
+  }
+
+  const query = targetParams.toString();
+
+  redirect(`/en/payment/success${query ? `?${query}` : ""}`);
 }
