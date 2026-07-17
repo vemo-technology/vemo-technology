@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendVemoVerificationEmail } from "@/lib/vemoVerificationEmail";
+import { resolveLlcPack } from "@/lib/llcPricing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -111,6 +112,16 @@ async function safeInsert(supabase: any, table: string, payloads: any[]) {
 
 async function saveDossier(body: any) {
   const supabase = supabaseAdmin();
+  const dossier = dossierNumber();
+  const resolvedPack = await resolveLlcPack(body);
+
+  if (!resolvedPack) {
+    return {
+      ok: false,
+      error: "Pack LLC invalide ou tarif indisponible.",
+      dossier_number: dossier,
+    };
+  }
 
   const email = getValue(body, [
     "email",
@@ -136,23 +147,10 @@ async function saveDossier(body: any) {
       "entity_name",
     ]) || "LLC à compléter";
 
-  const state = getValue(body, ["state", "llc_state", "jurisdiction"]) || "New Mexico";
-
-  const packageName =
-    getValue(body, [
-      "package_name",
-      "pack_name",
-      "plan_name",
-      "selected_pack",
-      "pack",
-      "plan",
-      "name",
-    ]) || "Standard";
-
-  const rawAmount = getValue(body, ["amount", "price", "total", "pack_price"]);
-  const amount = Number(rawAmount || 179);
-
-  const currency = (getValue(body, ["currency"]) || "USD").toUpperCase();
+  const state = resolvedPack.state;
+  const packageName = resolvedPack.name;
+  const amount = resolvedPack.amount;
+  const currency = resolvedPack.currency;
 
   const paymentMethod = normalizePaymentMethod(
     getValue(body, ["payment_method", "paymentMethod", "method", "payment"]) || "card"
@@ -164,7 +162,6 @@ async function saveDossier(body: any) {
   const status =
     paymentMethod === "bank_transfer" ? "pending_verification" : "pending_payment";
 
-  const dossier = dossierNumber();
   const now = new Date().toISOString();
 
   if (!email || !email.includes("@")) {

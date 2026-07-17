@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveLlcPack } from "@/lib/llcPricing";
 
 async function sendVerificationEmail(email: string, verifyUrl: string, lang: string) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -26,6 +27,15 @@ async function sendVerificationEmail(email: string, verifyUrl: string, lang: str
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const resolvedPack = await resolveLlcPack(body);
+
+    if (!resolvedPack) {
+      return NextResponse.json(
+        { error: "Pack LLC invalide ou tarif indisponible." },
+        { status: 400 }
+      );
+    }
+
     const secret = process.env.STRIPE_SECRET_KEY;
 
     if (!secret) {
@@ -46,8 +56,7 @@ export async function POST(request: Request) {
     const verifyUrl = `${origin}/api/llc/verify?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(portalPath)}&lang=${lang}`;
     await sendVerificationEmail(email, verifyUrl, lang);
 
-    const total = Number(body.total || 0);
-    const packName = body?.pack?.name || "LLC Package";
+    const { amount: total, name: packName } = resolvedPack;
 
     const params = new URLSearchParams();
     params.append("mode", "payment");
@@ -56,14 +65,18 @@ export async function POST(request: Request) {
     params.append("success_url", `${origin}/${lang === "fr" ? "fr/paiement/success" : "en/payment/success"}?session_id={CHECKOUT_SESSION_ID}&email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(lang === "fr" ? "/fr/client" : "/en/client")}&lang=${lang}`);
     params.append("cancel_url", `${origin}/${lang === "fr" ? "fr/commencer" : "en/start"}?payment=cancelled`);
     params.append("line_items[0][quantity]", "1");
-    params.append("line_items[0][price_data][currency]", "usd");
+    params.append(
+      "line_items[0][price_data][currency]",
+      resolvedPack.currency.toLowerCase()
+    );
     params.append("line_items[0][price_data][unit_amount]", String(Math.round(total * 100)));
     params.append("line_items[0][price_data][product_data][name]", `VEMO Technology — ${packName}`);
     params.append("line_items[0][price_data][product_data][description]", "US LLC formation service");
     params.append("client_reference_id", email);
     params.append("metadata[email]", email);
     params.append("metadata[pack]", packName);
-    params.append("metadata[state]", body?.form?.state || "");
+    params.append("metadata[state]", resolvedPack.state);
+    params.append("metadata[pack_id]", resolvedPack.id);
 
     const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
