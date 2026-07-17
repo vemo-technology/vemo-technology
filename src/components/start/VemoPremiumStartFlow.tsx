@@ -317,6 +317,8 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
     proofName: "",
   });
 
+  const [proofFile, setProofFile] = useState<File | null>(null);
+
   const selectedPack = packs[form.state][form.pack];
   const automaticServices = automaticByPack[form.pack];
   const availableServices = availableByPack[form.pack];
@@ -422,7 +424,7 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
 
     if (target === 7) {
       if (!form.payment) e.payment = t.required;
-      if (form.payment === "transfer" && !form.proofName) e.proofName = lang === "fr" ? "Justificatif obligatoire." : "Proof is required.";
+      if (form.payment === "transfer" && (!proofFile || !form.proofName)) e.proofName = lang === "fr" ? "Justificatif obligatoire." : "Proof is required.";
     }
 
     setErrors(e);
@@ -479,6 +481,44 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
       if (!res.ok) {
         setErrors({ payment: data.error || "Finalization error." });
         return;
+      }
+
+      if (form.payment === "transfer") {
+        if (!proofFile || !data.dossier_number) {
+          setErrors({
+            payment:
+              lang === "fr"
+                ? "Le justificatif ou le numéro de dossier est manquant."
+                : "The payment proof or case number is missing.",
+          });
+          return;
+        }
+
+        const proofForm = new FormData();
+        proofForm.append("email", form.email);
+        proofForm.append("dossier_number", data.dossier_number);
+        proofForm.append("file", proofFile);
+
+        const proofResponse = await fetch(
+          "/api/orders/bank-transfer-proof",
+          {
+            method: "POST",
+            body: proofForm,
+          }
+        );
+
+        const proofResult = await proofResponse.json();
+
+        if (!proofResponse.ok) {
+          setErrors({
+            payment:
+              proofResult.error ||
+              (lang === "fr"
+                ? "Impossible d’envoyer le justificatif."
+                : "Unable to upload the payment proof."),
+          });
+          return;
+        }
       }
 
       if (data.pendingUrl) {
@@ -708,7 +748,15 @@ export default function VemoPremiumStartFlow({ lang }: { lang: Lang }) {
                         </div>
                         <label className="vemo-flow-upload">
                           {t.upload}
-                          <input type="file" onChange={(e) => update("proofName", e.target.files?.[0]?.name || "")} />
+                          <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] || null;
+                              setProofFile(file);
+                              update("proofName", file?.name || "");
+                            }}
+                          />
                         </label>
                         {form.proofName && <b>{form.proofName}</b>}
                         {errors.proofName && <p className="vemo-flow-error">{errors.proofName}</p>}
