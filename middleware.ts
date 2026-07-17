@@ -13,7 +13,7 @@ async function expectedToken() {
   const password = process.env.VEMO_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "";
   const secret = process.env.VEMO_ADMIN_SECRET || process.env.ADMIN_PASSWORD || "";
 
-  if (!password || !secret) return "";
+  if (!password || !secret) return null;
 
   return sha256(`${password}:${secret}`);
 }
@@ -21,10 +21,17 @@ async function expectedToken() {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isAdminPage = pathname.startsWith("/fr/admin") || pathname.startsWith("/en/admin");
+  const isAdminPage =
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname.startsWith("/fr/admin") ||
+    pathname.startsWith("/en/admin");
   const isAdminApi = pathname.startsWith("/api/admin");
   const isAuthApi = pathname.startsWith("/api/admin/auth");
-  const isLoginPage = pathname === "/fr/admin/login" || pathname === "/en/admin/login";
+  const isLoginPage =
+    pathname === "/admin/connexion" ||
+    pathname === "/fr/admin/login" ||
+    pathname === "/en/admin/login";
 
   if (isAuthApi || isLoginPage) {
     return NextResponse.next();
@@ -34,7 +41,7 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get("vemo_admin_session")?.value || "";
     const expected = await expectedToken();
 
-    if (token !== expected) {
+    if (!expected || !token || token !== expected) {
       if (isAdminApi) {
         return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
       }
@@ -50,5 +57,10 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/fr/admin/:path*", "/en/admin/:path*", "/api/admin/:path*"]
+  matcher: [
+    "/admin/:path*",
+    "/fr/admin/:path*",
+    "/en/admin/:path*",
+    "/api/admin/:path*",
+  ],
 };

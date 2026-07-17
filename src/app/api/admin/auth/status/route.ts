@@ -1,15 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import { NextResponse } from "next/server";
+import { verifyAdminRequest } from "@/lib/adminAuth";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function adminToken() {
-  const password = process.env.VEMO_ADMIN_PASSWORD || "VemoAdmin@2026";
-  const secret = process.env.VEMO_ADMIN_SECRET || "vemo-admin-local-secret-2026";
-  return crypto.createHash("sha256").update(`${password}:${secret}`).digest("hex");
-}
+export async function GET(request: Request) {
+  const auth = await verifyAdminRequest(request);
 
-export async function GET(request: NextRequest) {
-  const token = request.cookies.get("vemo_admin_session")?.value || "";
-  return NextResponse.json({ ok: token === adminToken() });
+  if (auth.ok === false) {
+    const status = auth.response.status >= 500 ? auth.response.status : 200;
+
+    return NextResponse.json(
+      { ok: false },
+      { status }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
 }
