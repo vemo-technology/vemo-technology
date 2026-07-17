@@ -275,26 +275,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fileUrl = supabase.storage
-      .from("payment-proofs")
-      .getPublicUrl(storagePath).data.publicUrl;
-
-    const { error: documentError } = await supabase
+    const { data: document, error: documentError } = await supabase
       .from("client_documents")
       .insert({
         client_email: email,
         title: "Justificatif de virement",
         document_type: "Justificatif de virement",
         file_name: file.name,
-        file_url: fileUrl,
+        file_url: null,
+        storage_path: storagePath,
         mime_type: detectedMime,
         size_bytes: file.size,
         status: "pending_verification",
         dossier_number: dossierNumber,
         uploaded_by: "client",
-      });
+      })
+      .select("id")
+      .single();
 
-    if (documentError) {
+    if (documentError || !document?.id) {
       await supabase.storage
         .from("payment-proofs")
         .remove([storagePath]);
@@ -303,6 +302,36 @@ export async function POST(request: NextRequest) {
         {
           ok: false,
           error: "Impossible d’enregistrer le justificatif.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const internalFileUrl =
+      `/api/admin/documents/file?id=${encodeURIComponent(document.id)}`;
+
+    const { error: linkError } = await supabase
+      .from("client_documents")
+      .update({
+        file_url: internalFileUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", document.id);
+
+    if (linkError) {
+      await supabase
+        .from("client_documents")
+        .delete()
+        .eq("id", document.id);
+
+      await supabase.storage
+        .from("payment-proofs")
+        .remove([storagePath]);
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Impossible de sécuriser l’accès au justificatif.",
         },
         { status: 500 }
       );
@@ -334,7 +363,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       dossier_number: dossierNumber,
-      file_url: fileUrl,
+      document_id: document.id,
     });
   } catch (error) {
     console.error("Bank transfer proof upload error:", error);

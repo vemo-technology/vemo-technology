@@ -20,8 +20,9 @@ create index if not exists bank_transfer_proofs_email_idx
 on public.bank_transfer_proofs (email);
 
 insert into storage.buckets (id, name, public)
-values ('payment-proofs', 'payment-proofs', true)
-on conflict (id) do nothing;
+values ('payment-proofs', 'payment-proofs', false)
+on conflict (id) do update
+set public = excluded.public;
 
 alter table public.client_accounts
 add column if not exists payment_status text default 'pending',
