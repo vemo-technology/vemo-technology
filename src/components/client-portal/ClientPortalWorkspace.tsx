@@ -262,18 +262,47 @@ export default function ClientPortalWorkspace({
   }, [accessToken, email]);
 
   useEffect(() => {
+    let active = true;
+    const loginPath = isFr ? "/fr/connexion" : "/en/connexion";
+    const redirectToLogin = () => window.location.replace(loginPath);
+    const hasStoredSupabaseSession = Object.keys(window.localStorage).some(
+      (key) => key.startsWith("sb-") && key.endsWith("-auth-token") && Boolean(window.localStorage.getItem(key)),
+    );
+
+    if (!hasStoredSupabaseSession) {
+      redirectToLogin();
+      return () => {
+        active = false;
+      };
+    }
+
     const supabase = createBrowserSupabaseClient();
-    supabase.auth.getSession().then(({ data }) => {
-      const sessionEmail = String(data.session?.user.email || "").trim().toLowerCase();
-      const token = data.session?.access_token || "";
-      if (!sessionEmail || !token) {
-        router.replace(isFr ? "/fr/connexion" : "/en/connexion");
-        return;
-      }
-      setEmail(sessionEmail);
-      setAccessToken(token);
-    });
-  }, [isFr, router]);
+
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error("Session lookup timed out")), 3_000);
+      }),
+    ])
+      .then(({ data }) => {
+        if (!active) return;
+        const sessionEmail = String(data.session?.user.email || "").trim().toLowerCase();
+        const token = data.session?.access_token || "";
+        if (!sessionEmail || !token) {
+          redirectToLogin();
+          return;
+        }
+        setEmail(sessionEmail);
+        setAccessToken(token);
+      })
+      .catch(() => {
+        if (active) redirectToLogin();
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isFr]);
 
   useEffect(() => {
     loadAll();
@@ -328,6 +357,14 @@ export default function ClientPortalWorkspace({
     { key: "messages", label: t.messages },
     { key: "account", label: t.account },
   ];
+
+  if (!accessToken) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F3F7FB] text-[#123A63]">
+        <p className="text-sm font-black">{isFr ? "Vérification de votre session…" : "Checking your session…"}</p>
+      </main>
+    );
+  }
 
   return (
     <main className="vemo-client-portal min-h-screen bg-[#F3F7FB] text-[#111827]">

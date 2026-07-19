@@ -9,6 +9,7 @@ Le projet n'est pas encore déclaré prêt pour la production. Ce document ne co
 - TypeScript (code 0), ESLint sans avertissement (code 0), 6 fichiers de tests et 22 tests unitaires (22/22), build Next.js de 123 routes (code 0).
 - `npm audit` : 0 vulnérabilité sur 545 paquets.
 - La clé Stripe locale s'authentifie auprès de l'API Stripe en lecture seule et appartient au mode test ; aucune clé live ni secret webhook n'est disponible localement.
+- Playwright Firefox : 6/6 scénarios passent en desktop et mobile. Cette recette a révélé puis validé le correctif de redirection de l'espace client anonyme.
 - Build de production compilé avec Next.js 16.2.10.
 - Les parcours HTTP de développement `/fr`, `/fr/connexion`, `/fr/commencer`, `/fr/contact`, `/en`, `/en/connexion` répondent 200 ; `/en/commencer` redirige vers `/en/start`.
 - L'instrumentation refuse le démarrage production lorsque les secrets obligatoires manquent, sont faibles ou lorsque les clés Stripe test/live sont incohérentes.
@@ -18,18 +19,21 @@ Le projet n'est pas encore déclaré prêt pour la production. Ce document ne co
 - Les événements critiques Stripe et Resend utilisent des logs JSON structurés ; les champs sensibles sont expurgés et les erreurs normalisées.
 - `instrumentation.ts` capture aussi les erreurs serveur via `onRequestError` de Next.js 16.
 - Supabase distant : les cinq tables attendues répondent en 200; `client-documents`, `payment-proofs` et `llc-documents` existent avec `public=false`; une insertion anonyme contrôlée dans `llc_orders` est refusée en 401/`42501`, preuve de la protection RLS.
+- Le nouveau projet Supabase `dnkxugrfqrsafiwssfdm` a été restauré jusqu'à `ACTIVE_HEALTHY`; la migration `20260718224000` est appliquée et enregistrée sous `production_schema`.
+- Les clés Supabase modernes `publishable` et `secret` répondent sur Auth, REST et Storage; les clés JWT legacy compromises du nouveau projet sont désactivées.
+- Les secrets admin locaux ont été remplacés par des valeurs cryptographiques fortes et les alias faibles historiques ont été supprimés.
 - Le workflow GitHub Actions Node 22/Chromium est préparé localement, mais le jeton GitHub courant ne possède pas le scope `workflow` requis pour le publier.
 
 ## Blocages à lever avant promotion
 
-- Supabase : le schéma, les buckets privés et RLS sont vérifiés sur le projet lié. La table interne d'historique de migrations reste non consultable par la CLI sans le mot de passe PostgreSQL; archiver cette dernière preuve lorsque cet accès sera disponible.
-- Secrets : considérer les anciennes clés locales Supabase/Stripe et les identifiants admin comme compromis. Révoquer/renouveler les clés chez chaque fournisseur, puis supprimer les anciennes. Ne pas réutiliser les valeurs locales.
+- Bascule Supabase : la production publique référence encore l'ancien projet `divwxlahvehrxdprsdpm`, tandis que le projet migré et sécurisé est `dnkxugrfqrsafiwssfdm`. Injecter les nouvelles variables dans Vercel et valider la Preview avant promotion.
+- Secrets : la rotation Supabase et admin locale est faite. La clé secrète Stripe exposée doit encore être tournée dans le Dashboard Stripe, qui impose une vérification de compte.
 - Vercel : les deux déploiements Git sont réussis, mais `/api/health` retourne 503 sur les deux domaines Vercel et sur `www.vemo-technology.com`. Compléter Preview/Production avec toutes les variables de `.env.example` et Node.js 22.
-- Stripe : `STRIPE_WEBHOOK_SECRET` absent ; créer le webhook production, vérifier les trois événements documentés et effectuer un paiement test complet.
+- Stripe : le compte de test répond et accepte les paiements, mais contient zéro endpoint webhook et `STRIPE_WEBHOOK_SECRET` est absent. Créer le webhook après accès Vercel, stocker immédiatement son secret, vérifier les trois événements documentés et effectuer un paiement test complet.
 - Resend : `RESEND_API_KEY` absent ; vérifier le domaine expéditeur, configurer `MAIL_FROM` et valider un email réel.
-- E2E local : Chromium 149 ne démarre pas sur macOS 10.15.7 car `AVFAudio.framework` manque. Exécuter les six scénarios via GitHub Actions/Preview sur Ubuntu ou sur une machine compatible.
+- E2E local : Firefox desktop/mobile passe 6/6. Chromium 149 ne démarre pas sur macOS 10.15.7 car `AVFAudio.framework` manque; conserver le passage Chromium comme contrôle CI multi-navigateur.
 - GitHub Actions : publier `.github/workflows/ci.yml` avec un jeton disposant du scope `workflow`, puis conserver les résultats qualité et E2E.
-- Recette production : la configuration locale manque `NEXT_PUBLIC_SITE_URL`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `MAIL_FROM`, `ADMIN_NOTIFICATION_EMAIL`, et le secret admin local est trop court. Le serveur production refuse donc volontairement de servir du trafic.
+- Recette production : la configuration locale manque `NEXT_PUBLIC_SITE_URL`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `MAIL_FROM` et `ADMIN_NOTIFICATION_EMAIL`. Le serveur production refuse donc volontairement de servir du trafic.
 
 ## Critères de clôture
 
