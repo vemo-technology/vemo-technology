@@ -80,16 +80,7 @@ export default function ClientLoginPage() {
         return;
       }
 
-      await fetch("/api/client-portal/mark-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${data.session?.access_token || ""}`,
-        },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      }).catch(() => null);
-
-      window.location.href = `/fr/espace-client?email=${encodeURIComponent(email.trim().toLowerCase())}`;
+      window.location.href = "/fr/espace-client";
     } catch (e: any) {
       const message = String(e?.message || "");
       setError(

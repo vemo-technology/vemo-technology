@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/test-results/
+/playwright-report/
+/blob-report/
 
 # next.js
 /.next/
@@ -19,6 +24,11 @@
 
 # production
 /build
+
+# Runtime/customer files must live in private object storage, never in Git or public/.
+/public/uploads/
+/public/client-documents/
+/data/client-*.json
 
 # misc
 .DS_Store
@@ -32,13 +42,14 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
+# Kept locally until the GitHub token has workflow scope.
+/.github/workflows/ci.yml
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-.vercel
-.env*.local

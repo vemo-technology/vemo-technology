@@ -1,3 +1,5 @@
+import { logEvent } from "@/lib/logger";
+
 type SendVemoVerificationEmailInput = {
   email: string;
   verifyUrl: string;
@@ -20,7 +22,7 @@ export async function sendVemoVerificationEmail({
   const resendKey = process.env.RESEND_API_KEY;
 
   if (!email || !resendKey) {
-    console.error("VEMO email not sent", {
+    logEvent("warn", "resend.verification_skipped", {
       hasEmail: Boolean(email),
       hasResendKey: Boolean(resendKey),
     });
@@ -72,10 +74,11 @@ export async function sendVemoVerificationEmail({
   });
 
   if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    console.error("VEMO verification email failed", details);
-    return { ok: false, details };
+    await response.body?.cancel().catch(() => undefined);
+    logEvent("error", "resend.verification_failed", { status: response.status });
+    return { ok: false };
   }
 
+  logEvent("info", "resend.verification_sent");
   return { ok: true };
 }

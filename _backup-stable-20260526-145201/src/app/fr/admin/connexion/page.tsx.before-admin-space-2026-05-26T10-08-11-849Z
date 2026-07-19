@@ -1,5 +1,0 @@
-import AdminLoginPage from "@/components/AdminLoginPage";
-
-export default function FrenchAdminLoginPage() {
-  return <AdminLoginPage lang="fr" />;
-}

@@ -15,19 +15,12 @@ type AdminFail = {
 
 const ADMIN_COOKIE_NAME = "vemo_admin_session";
 
-function getPasswordSessionToken() {
-  const password = process.env.VEMO_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || "";
-  const secret = process.env.VEMO_ADMIN_SECRET || process.env.ADMIN_PASSWORD || "";
-
-  if (!password || !secret) return "";
-
-  return crypto.createHash("sha256").update(`${password}:${secret}`).digest("hex");
+function getAdminSecret() {
+  const secret = process.env.VEMO_ADMIN_SECRET || "";
+  return secret;
 }
 
 function hasValidPasswordSession(request: Request) {
-  const expected = getPasswordSessionToken();
-  if (!expected) return false;
-
   const cookieHeader = request.headers.get("cookie") || "";
   const token = cookieHeader
     .split(";")
@@ -35,9 +28,26 @@ function hasValidPasswordSession(request: Request) {
     .find((part) => part.startsWith(`${ADMIN_COOKIE_NAME}=`))
     ?.slice(ADMIN_COOKIE_NAME.length + 1);
 
-  if (!token || token.length !== expected.length) return false;
+  return verifyPasswordSessionToken(token || "");
+}
 
-  return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+export function createPasswordSessionToken(now = Date.now()) {
+  const secret = getAdminSecret();
+  if (secret.length < 32) return "";
+  const issuedAt = Math.floor(now / 1000).toString();
+  const signature = crypto.createHmac("sha256", secret).update(issuedAt).digest("base64url");
+  return `${issuedAt}.${signature}`;
+}
+
+export function verifyPasswordSessionToken(token: string, now = Date.now()) {
+  const secret = getAdminSecret();
+  const [issuedAtRaw, signature = ""] = token.split(".");
+  const issuedAt = Number(issuedAtRaw);
+  const age = Math.floor(now / 1000) - issuedAt;
+  if (secret.length < 32 || !Number.isSafeInteger(issuedAt) || age < 0 || age > 60 * 60 * 12) return false;
+  const expected = crypto.createHmac("sha256", secret).update(issuedAtRaw).digest("base64url");
+  if (signature.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 
 function getBearerToken(request: Request) {

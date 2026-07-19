@@ -23,7 +23,7 @@ export default function EnglishLoginPage() {
 
       const supabase = createBrowserSupabaseClient();
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
@@ -32,20 +32,7 @@ export default function EnglishLoginPage() {
         throw error;
       }
 
-      const normalizedEmail = email.trim().toLowerCase();
-
-      if (data.session?.access_token) {
-        await fetch("/api/client-portal/mark-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.session.access_token}`,
-          },
-          body: JSON.stringify({ email: normalizedEmail }),
-        }).catch(() => null);
-      }
-
-      router.push(`/en/client-portal?email=${encodeURIComponent(normalizedEmail)}`);
+      router.push("/en/client-portal");
     } catch (error) {
       const rawMessage = error instanceof Error ? error.message : "";
       setMessage(

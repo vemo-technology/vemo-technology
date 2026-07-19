@@ -2,6 +2,8 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
+import { sendVemoVerificationEmail } from "@/lib/vemoVerificationEmail";
+import { enforceRateLimit, enforceSameOrigin } from "@/lib/requestSecurity";
 
 export const runtime = "nodejs";
 
@@ -83,6 +85,10 @@ async function ensureWelcomeMessages(
 
 export async function POST(request: Request) {
   try {
+    const originError = enforceSameOrigin(request);
+    if (originError) return originError;
+    const rateError = enforceRateLimit(request, "confirm-stripe-order", 20, 60 * 60 * 1000);
+    if (rateError) return rateError;
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
     if (!stripeSecretKey) {
@@ -120,6 +126,7 @@ export async function POST(request: Request) {
       session.customer_details?.email ||
         session.customer_email ||
         session.metadata?.customerEmail ||
+        session.metadata?.email ||
         ""
     );
 
@@ -144,12 +151,24 @@ export async function POST(request: Request) {
     let orderId = session.metadata?.orderId || "";
     let order: any = null;
 
+    if (!orderId) {
+      return NextResponse.json({ error: "La session Stripe n’est liée à aucune commande VEMO." }, { status: 409 });
+    }
+
     if (orderId) {
       const { data: orderData } = await supabase
         .from("llc_orders")
         .select("*")
         .eq("id", orderId)
         .maybeSingle();
+
+      if (!orderData?.id) {
+        return NextResponse.json({ error: "Commande VEMO introuvable." }, { status: 404 });
+      }
+      const expectedAmount = Math.round(Number(orderData.amount || orderData.total_amount || 0) * 100);
+      if (!session.amount_total || session.amount_total !== expectedAmount) {
+        return NextResponse.json({ error: "Le montant Stripe ne correspond pas à la commande." }, { status: 409 });
+      }
 
       const { data: updatedOrder } = await supabase
         .from("llc_orders")
@@ -179,58 +198,6 @@ export async function POST(request: Request) {
     }
 
     if (!orderId) {
-      const { data: existingOrder } = await supabase
-        .from("llc_orders")
-        .select("*")
-        .eq("stripe_session_id", session.id)
-        .maybeSingle();
-
-      if (existingOrder?.id) {
-        orderId = existingOrder.id;
-        order = existingOrder;
-      }
-    }
-
-    if (!orderId) {
-      const { data: insertedOrder, error: orderInsertError } = await supabase
-        .from("llc_orders")
-        .insert({
-          stripe_session_id: session.id,
-          status: "paid",
-          payment_status: "paid",
-          customer_email: customerEmail,
-          customer_name: customerName,
-          company_name: companyName,
-          plan_name: planName,
-          state,
-          amount,
-          currency: "usd",
-          services: [
-            "Operating Agreement",
-            "EIN",
-            "Registered Agent",
-            "Suivi administratif",
-          ],
-          dossier: {},
-          missing_items: [
-            "Pièce d'identité du membre",
-            "Justificatif d'adresse"
-          ],
-          paid_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select("*")
-        .single();
-
-      if (orderInsertError) {
-        console.error("Order insert error:", orderInsertError);
-      }
-
-      orderId = insertedOrder?.id || "";
-      order = insertedOrder;
-    }
-
-    if (!orderId) {
       return NextResponse.json(
         { error: "Impossible de créer ou retrouver la commande." },
         { status: 500 }
@@ -239,14 +206,12 @@ export async function POST(request: Request) {
 
     const { data: existingAccount } = await supabase
       .from("client_accounts")
-      .select("id, access_token")
+      .select("id, activation_email_sent_at")
       .eq("email", customerEmail)
       .maybeSingle();
 
-    let accessToken = existingAccount?.access_token || crypto.randomUUID();
-
     if (existingAccount?.id) {
-      const { data: updatedAccount, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from("client_accounts")
         .update({
           order_id: orderId,
@@ -255,20 +220,18 @@ export async function POST(request: Request) {
           plan_name: order?.plan_name || planName,
           status: "pending_activation",
           portal_enabled: true,
-          access_token: accessToken,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingAccount.id)
-        .select("access_token")
+        .select("id")
         .single();
 
       if (updateError) {
         console.error("Account update error:", updateError);
       }
 
-      accessToken = updatedAccount?.access_token || accessToken;
     } else {
-      const { data: insertedAccount, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from("client_accounts")
         .insert({
           order_id: orderId,
@@ -279,32 +242,67 @@ export async function POST(request: Request) {
           status: "pending_activation",
           portal_enabled: true,
           email_confirmed: false,
-          access_token: accessToken,
           updated_at: new Date().toISOString(),
         })
-        .select("access_token")
+        .select("id")
         .single();
 
       if (insertError) {
         console.error("Account insert error:", insertError);
       }
 
-      accessToken = insertedAccount?.access_token || accessToken;
     }
 
     await ensureDefaultDocuments(supabase, orderId, customerEmail);
     await ensureWelcomeMessages(supabase, orderId, customerEmail);
 
-    const activationUrl = `/fr/compte/activer?token=${accessToken}`;
-    const portalUrl = `/fr/espace-client`;
+    const lang = session.metadata?.lang === "en" ? "en" : "fr";
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin).replace(/\/$/, "");
+    let activationEmailSent = Boolean(existingAccount?.activation_email_sent_at);
+    if (!activationEmailSent) {
+      const userList = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const existingUser = userList.data?.users?.find(
+        (user) => normalizeEmail(user.email) === customerEmail
+      );
+      if (!existingUser) {
+        await supabase.auth.admin.createUser({
+          email: customerEmail,
+          email_confirm: true,
+          user_metadata: { full_name: customerName, company_name: companyName },
+        });
+      }
+      const callbackPath = `/${lang}/auth/callback?next=${encodeURIComponent(
+        lang === "fr" ? "/fr/espace-client" : "/en/client-portal"
+      )}`;
+      const generated = await supabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: customerEmail,
+        options: { redirectTo: `${siteUrl}${callbackPath}` },
+      });
+      const actionLink = generated.data?.properties?.action_link;
+      if (actionLink) {
+        const sent = await sendVemoVerificationEmail({
+          email: customerEmail,
+          verifyUrl: actionLink,
+          lang,
+        });
+        activationEmailSent = sent.ok;
+        if (sent.ok) {
+          await supabase
+            .from("client_accounts")
+            .update({ activation_email_sent_at: new Date().toISOString() })
+            .eq("email", customerEmail);
+        }
+      }
+    }
+    const portalUrl = lang === "fr" ? "/fr/espace-client" : "/en/client-portal";
 
     return NextResponse.json({
       ok: true,
       orderId,
       customerEmail,
-      activationUrl,
       portalUrl,
-      accessToken,
+      activationEmailSent,
     });
   } catch (error: unknown) {
     console.error("Confirm order error:", error);
@@ -321,4 +319,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

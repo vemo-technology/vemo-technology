@@ -1,6 +1,0 @@
-
-import AdminSectionPage from "@/components/admin/AdminSectionPage";
-
-export default function Page() {
-  return <AdminSectionPage lang="en" title="Messages" subtitle="Track client messages and Vemo replies." />;
-}

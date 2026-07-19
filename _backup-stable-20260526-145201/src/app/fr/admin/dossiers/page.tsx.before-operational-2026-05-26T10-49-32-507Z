@@ -1,6 +1,0 @@
-
-import AdminSectionPage from "@/components/admin/AdminSectionPage";
-
-export default function Page() {
-  return <AdminSectionPage lang="fr" title="Dossiers" subtitle="Suivi des créations LLC, étapes, documents et avancement." />;
-}

@@ -1,6 +1,0 @@
-
-import AdminSectionPage from "@/components/admin/AdminSectionPage";
-
-export default function Page() {
-  return <AdminSectionPage lang="fr" title="Clients" subtitle="Gestion des comptes clients, emails, statuts et accès portail." />;
-}

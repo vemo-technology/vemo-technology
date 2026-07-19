@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { enforceRateLimit, enforceSameOrigin } from "@/lib/requestSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,23 +19,11 @@ function supabasePublic() {
   });
 }
 
-function supabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) return null;
-
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  });
-}
-
 export async function POST(request: NextRequest) {
+  const originError = enforceSameOrigin(request);
+  if (originError) return originError;
+  const rateError = enforceRateLimit(request, "client-signup", 5, 60 * 60 * 1000);
+  if (rateError) return rateError;
   try {
     const body = await request.json().catch(() => ({}));
 
@@ -53,15 +42,11 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = supabasePublic();
-    const admin = supabaseAdmin();
-
     if (!supabase) {
-      return NextResponse.json({
-        ok: true,
-        email,
-        requires_email_confirmation: true,
-        warning: "Supabase non configuré. Simulation création espace client."
-      });
+      return NextResponse.json(
+        { ok: false, error: "Service d’authentification indisponible." },
+        { status: 503 }
+      );
     }
 
     const origin =
@@ -89,32 +74,6 @@ export async function POST(request: NextRequest) {
       if (!msg.includes("already") && !msg.includes("registered") && !msg.includes("exists")) {
         return NextResponse.json({ ok: false, error: error.message }, { status: 200 });
       }
-    }
-
-    if (admin) {
-      for (const table of ["clients", "client_payments", "orders"]) {
-        try {
-          await admin
-            .from(table)
-            .update({
-              email,
-              client_email: email,
-              portal_enabled: false,
-              email_confirmed: false,
-              account_status: "email_confirmation_required",
-              updated_at: new Date().toISOString()
-            })
-            .or(`email.eq.${email},client_email.eq.${email}`);
-        } catch {}
-      }
-
-      try {
-        await admin.from("client_messages").insert({
-          client_email: email,
-          sender: "vemo",
-          message: "Espace client demandé. Email de confirmation envoyé au client."
-        });
-      } catch {}
     }
 
     return NextResponse.json({

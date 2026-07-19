@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { enforceRateLimit, enforceSameOrigin } from "@/lib/requestSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,10 @@ function supabasePublic() {
 }
 
 export async function POST(request: NextRequest) {
+  const originError = enforceSameOrigin(request);
+  if (originError) return originError;
+  const rateError = enforceRateLimit(request, "resend-confirmation", 3, 60 * 60 * 1000);
+  if (rateError) return rateError;
   try {
     const body = await request.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();

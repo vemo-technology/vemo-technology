@@ -1,8 +1,8 @@
 import { Resend } from "resend";
+import { logEvent } from "@/lib/logger";
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const emailFrom =
-  process.env.EMAIL_FROM || "Vemo Technology <onboarding@resend.dev>";
+const emailFrom = process.env.MAIL_FROM || process.env.EMAIL_FROM;
 
 const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
 
@@ -28,8 +28,8 @@ function formatAmount(amount: number, currency: string) {
 export async function sendPaidOrderEmails(
   input: PaidOrderEmailInput
 ) {
-  if (!resend) {
-    console.warn("RESEND_API_KEY missing");
+  if (!resend || !emailFrom) {
+    logEvent("warn", "resend.configuration_missing");
     return;
   }
 
@@ -91,9 +91,9 @@ export async function sendPaidOrderEmails(
       });
     }
 
-    console.log("Emails sent successfully");
+    logEvent("info", "resend.paid_order_sent", { adminCopy: Boolean(adminEmail) });
   } catch (error) {
-    console.error("Resend email error:", error);
+    logEvent("error", "resend.paid_order_failed", { error });
   }
 }
 

@@ -1,6 +1,0 @@
-
-import ClientPortalUnifiedPage from "@/components/ClientPortalUnifiedPage";
-
-export default function Page() {
-  return <ClientPortalUnifiedPage lang="fr" />;
-}

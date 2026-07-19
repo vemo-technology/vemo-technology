@@ -1,5 +1,0 @@
-import AdminSecurePage from "@/components/AdminSecurePage";
-
-export default function FrenchAdminPage() {
-  return <AdminSecurePage lang="fr" />;
-}

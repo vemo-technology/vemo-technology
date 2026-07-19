@@ -29,22 +29,10 @@ function CallbackContent() {
         }
 
         const { data } = await supabase.auth.getSession();
-        const email = data.session?.user?.email || "";
-
-        if (data.session?.access_token) {
-          await fetch("/api/client-portal/mark-session", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${data.session.access_token}`,
-            },
-            body: JSON.stringify({ email }),
-          });
-        }
+        if (!data.session) throw new Error("No authenticated session was created.");
 
         setMessage("Account confirmed. Redirecting...");
         const destination = new URL(next, window.location.origin);
-        if (email) destination.searchParams.set("email", email);
         router.replace(
           `${destination.pathname}${destination.search}${destination.hash}`
         );

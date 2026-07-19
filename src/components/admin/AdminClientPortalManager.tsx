@@ -347,7 +347,9 @@ export default function AdminClientPortalManager({ lang }: Props) {
   }
 
   useEffect(() => {
+    // Initial load only; subsequent refreshes are explicit after mutations.
     loadClients().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 const StatPill = ({ value }: { value: string }) => (

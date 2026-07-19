@@ -11,9 +11,7 @@ function normalizeTab(value?: string): Tab {
 
 export default async function FrEspaceClientPage({
   searchParams,
-}: {
-  searchParams?: Promise<{ email?: string; tab?: string }>;
-}) {
+}: { searchParams?: Promise<{ tab?: string }> }) {
   const params = searchParams ? await searchParams : {};
-  return <ClientPortalWorkspace lang="fr" email={params.email || ""} tab={normalizeTab(params.tab)} />;
+  return <ClientPortalWorkspace lang="fr" tab={normalizeTab(params.tab)} />;
 }

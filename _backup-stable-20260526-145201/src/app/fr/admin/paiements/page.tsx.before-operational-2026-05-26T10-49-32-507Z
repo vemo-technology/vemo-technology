@@ -1,6 +1,0 @@
-
-import AdminSectionPage from "@/components/admin/AdminSectionPage";
-
-export default function Page() {
-  return <AdminSectionPage lang="fr" title="Paiements" subtitle="Vérification des paiements carte et virements bancaires." />;
-}

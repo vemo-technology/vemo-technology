@@ -2,15 +2,15 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendVemoVerificationEmail } from "@/lib/vemoVerificationEmail";
 import { resolveLlcPack } from "@/lib/llcPricing";
+import { enforceRateLimit, enforceSameOrigin } from "@/lib/requestSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function supabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) return null;
 
@@ -245,30 +245,12 @@ async function saveDossier(body: any) {
     updated_at: now,
   };
 
-  const accountPayload = {
-    email,
-    full_name: fullName,
-    company_name: llcName,
-    plan_name: packageName,
-    status: "pending_activation",
-    payment_status: paymentStatus,
-    payment_method: paymentMethod,
-    portal_enabled: true,
-    access_token:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random()}`,
-    created_at: now,
-    updated_at: now,
-  };
-
   const results = [];
 
   results.push(await safeInsert(supabase, "orders", [commonPayload]));
   results.push(await safeInsert(supabase, "clients", [commonPayload]));
   results.push(await safeInsert(supabase, "client_payments", [commonPayload]));
   results.push(await safeInsert(supabase, "llc_orders", [llcOrderPayload, commonPayload]));
-  results.push(await safeInsert(supabase, "client_accounts", [accountPayload]));
 
   try {
     await supabase.from("client_messages").insert({
@@ -300,6 +282,10 @@ async function saveDossier(body: any) {
 
 export async function POST(request: Request) {
   try {
+    const originError = enforceSameOrigin(request);
+    if (originError) return originError;
+    const rateError = enforceRateLimit(request, "llc-finalize", 10, 60 * 60 * 1000);
+    if (rateError) return rateError;
     const body = await request.json().catch(() => ({}));
 
     const origin =
@@ -321,18 +307,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const portalPath = lang === "fr" ? "/fr/connexion" : "/en/connexion";
-    const pendingPath = lang === "fr" ? "/fr/client" : "/en/client";
-
-    const verifyUrl = `${origin}/api/llc/verify?email=${encodeURIComponent(
-      saved.email
-    )}&redirect=${encodeURIComponent(portalPath)}&lang=${lang}`;
-
-    await sendVemoVerificationEmail({
-      email: saved.email,
-      verifyUrl,
-      lang,
-    });
+    const pendingPath = lang === "fr"
+      ? "/fr/payment-pending-verification"
+      : "/en/payment-pending-verification";
 
     return NextResponse.json({
       ok: true,

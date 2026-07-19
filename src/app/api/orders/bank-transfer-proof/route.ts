@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { enforceRateLimit, enforceSameOrigin } from "@/lib/requestSecurity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -145,6 +146,10 @@ async function dossierBelongsToEmail(
 
 export async function POST(request: NextRequest) {
   try {
+    const originError = enforceSameOrigin(request);
+    if (originError) return originError;
+    const rateError = enforceRateLimit(request, "bank-proof-upload", 8, 60 * 60 * 1000);
+    if (rateError) return rateError;
     const supabase = supabaseAdmin();
 
     if (!supabase) {

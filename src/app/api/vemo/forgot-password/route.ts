@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit, enforceSameOrigin } from "@/lib/requestSecurity";
 import { createClient } from "@supabase/supabase-js";
 
 function siteUrl() {
@@ -13,6 +14,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const originError = enforceSameOrigin(request);
+  if (originError) return originError;
+  const rateError = enforceRateLimit(request, "forgot-password", 5, 60 * 60 * 1000);
+  if (rateError) return rateError;
   try {
     const body = await request.json().catch(() => ({}));
     const email = String(body?.email || "").trim();

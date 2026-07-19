@@ -34,5 +34,5 @@ create table if not exists public.client_messages (
 );
 
 insert into storage.buckets (id, name, public)
-values ('client-documents', 'client-documents', true)
-on conflict (id) do nothing;
+values ('client-documents', 'client-documents', false)
+on conflict (id) do update set public = false;

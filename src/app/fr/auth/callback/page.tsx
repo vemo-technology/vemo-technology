@@ -43,7 +43,6 @@ export default function AuthCallbackPage() {
             : "/fr/espace-client";
 
         let email = "";
-        let accessToken = "";
 
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -54,11 +53,9 @@ export default function AuthCallbackPage() {
           }
 
           email = data?.session?.user?.email || "";
-          accessToken = data?.session?.access_token || "";
         } else {
           const { data } = await supabase.auth.getSession();
           email = data?.session?.user?.email || "";
-          accessToken = data?.session?.access_token || "";
         }
 
         if (!email) {
@@ -69,23 +66,10 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        await fetch("/api/client-portal/mark-session", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            email,
-          }),
-        }).catch(() => null);
-
         setMessage("Email confirmé. Redirection vers votre espace client...");
 
         window.setTimeout(() => {
-          const destination = new URL(next, window.location.origin);
-          destination.searchParams.set("email", email);
-          window.location.href = `${destination.pathname}${destination.search}${destination.hash}`;
+          window.location.href = next;
         }, 900);
       } catch (error: any) {
         setMessage(error?.message || "Erreur pendant la confirmation email.");

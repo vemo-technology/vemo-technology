@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabaseBrowser";
 
 function VemoClientOpenIcon() {
   return (
@@ -30,7 +31,6 @@ type Tab = "status" | "documents" | "services" | "messages" | "account";
 
 type Props = {
   lang?: Lang;
-  email?: string;
   tab?: Tab | "overview";
 };
 
@@ -93,26 +93,6 @@ function Logo({ small = false }: { small?: boolean }) {
   );
 }
 
-function IconOpen() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 4h6v6" />
-      <path d="M10 14L20 4" />
-      <path d="M20 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5" />
-    </svg>
-  );
-}
-
-function IconDownload() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v12" />
-      <path d="M7 10l5 5 5-5" />
-      <path d="M5 21h14" />
-    </svg>
-  );
-}
-
 function FieldBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[16px] border border-[#DDE7F2] bg-[#F8FAFC] px-5 py-4">
@@ -124,7 +104,6 @@ function FieldBox({ label, value }: { label: string; value: string }) {
 
 export default function ClientPortalWorkspace({
   lang = "fr",
-  email: emailProp = "",
   tab,
 }: Props) {
   const isFr = lang === "fr";
@@ -132,7 +111,8 @@ export default function ClientPortalWorkspace({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const email = searchParams.get("email") || emailProp;
+  const [email, setEmail] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const tabFromParams = searchParams.get("tab") || tab || "status";
   const initialTab = (tabFromParams === "overview" ? "status" : tabFromParams) as Tab;
 
@@ -260,51 +240,53 @@ export default function ClientPortalWorkspace({
     router.push(isFr ? "/fr" : "/en");
   }
 
-  async function loadAll() {
-    if (!email) {
+  const loadAll = useCallback(async () => {
+    if (!email || !accessToken) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
 
-    const qs = `?email=${encodeURIComponent(email)}`;
-
-    const [docsRes, servicesRes, statusRes, messagesRes, accountRes] = await Promise.all([
-      fetch(`/api/client-portal/documents${qs}`, { cache: "no-store" }).catch(() => null),
-      fetch(`/api/client-portal/services${qs}`, { cache: "no-store" }).catch(() => null),
-      fetch(`/api/client-portal/status${qs}`, { cache: "no-store" }).catch(() => null),
-      fetch(`/api/client-portal/messages${qs}`, { cache: "no-store" }).catch(() => null),
-      fetch(`/api/client-portal/account${qs}`, { cache: "no-store" }).catch(() => null),
-    ]);
-
-    const docsJson = await docsRes?.json().catch(() => null);
-    const servicesJson = await servicesRes?.json().catch(() => null);
-    const statusJson = await statusRes?.json().catch(() => null);
-    const messagesJson = await messagesRes?.json().catch(() => null);
-    const accountJson = await accountRes?.json().catch(() => null);
-
-    setDocuments(Array.isArray(docsJson?.documents) ? docsJson.documents : []);
-    setServices(Array.isArray(servicesJson?.services) ? servicesJson.services : []);
-    setStatus(statusJson?.status || statusJson || {});
-    setMessages(Array.isArray(messagesJson?.messages) ? messagesJson.messages : []);
-    setAccount(accountJson?.account || accountJson?.profile || { email });
+    const requestOptions = { cache: "no-store" as const, headers: { Authorization: `Bearer ${accessToken}` } };
+    const response = await fetch("/api/client-portal/order", requestOptions).catch(() => null);
+    const data = await response?.json().catch(() => null);
+    const order = data?.order || {};
+    setDocuments(Array.isArray(data?.documents) ? data.documents : []);
+    setServices(Array.isArray(order.services) ? order.services.map((name: string, index: number) => ({ id: `${index}`, name, status: "included" })) : []);
+    setStatus({ payment: order.payment_status, file: order.status, currentStep: order.current_step });
+    setMessages(Array.isArray(data?.messages) ? data.messages : []);
+    setAccount(data?.account || { email });
 
     setLoading(false);
-  }
+  }, [accessToken, email]);
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    supabase.auth.getSession().then(({ data }) => {
+      const sessionEmail = String(data.session?.user.email || "").trim().toLowerCase();
+      const token = data.session?.access_token || "";
+      if (!sessionEmail || !token) {
+        router.replace(isFr ? "/fr/connexion" : "/en/connexion");
+        return;
+      }
+      setEmail(sessionEmail);
+      setAccessToken(token);
+    });
+  }, [isFr, router]);
 
   useEffect(() => {
     loadAll();
-  }, [email]);
+  }, [loadAll]);
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !message.trim()) return;
 
-    await fetch(`/api/client-portal/messages?email=${encodeURIComponent(email)}`, {
+    await fetch("/api/client-portal/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, message, from: "client" }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ email, subject, message, from: "client" }),
     }).catch(() => null);
 
     setSubject("");
@@ -321,11 +303,17 @@ export default function ClientPortalWorkspace({
       return;
     }
 
-    await fetch(`/api/client-portal/account?email=${encodeURIComponent(email)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oldPassword, newPassword }),
-    }).catch(() => null);
+    const supabase = createBrowserSupabaseClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password: oldPassword });
+    if (signInError) {
+      setNotice(isFr ? "Mot de passe actuel incorrect." : "Current password is incorrect.");
+      return;
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) {
+      setNotice(updateError.message);
+      return;
+    }
 
     setOldPassword("");
     setNewPassword("");
@@ -456,9 +444,7 @@ export default function ClientPortalWorkspace({
                     const filename = doc.filename || (isFr ? "Fichier disponible" : "Available file");
                     const url = doc.url || doc.fileUrl || "#";
 
-                    const previewUrl = isFr
-                      ? `/fr/espace-client/document?email=${encodeURIComponent(email)}&title=${encodeURIComponent(title)}&file=${encodeURIComponent(filename)}&url=${encodeURIComponent(url)}`
-                      : `/en/client-portal/document?email=${encodeURIComponent(email)}&title=${encodeURIComponent(title)}&file=${encodeURIComponent(filename)}&url=${encodeURIComponent(url)}`;
+                    const previewUrl = url;
 
                     return (
                       <div

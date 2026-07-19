@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 
@@ -45,7 +45,7 @@ export default function AdminClientContent() {
   const [clientStatus, setClientStatus] = useState<any>(null);
   const [savingStatus, setSavingStatus] = useState(false);
 
-  async function loadClientData() {
+  const loadClientData = useCallback(async () => {
     if (!email) {
       setLoading(false);
       return;
@@ -73,11 +73,11 @@ export default function AdminClientContent() {
     setMessages(Array.isArray(msgData?.messages) ? msgData.messages : []);
     setClientStatus(statusData?.status || null);
     setLoading(false);
-  }
+  }, [email]);
 
   useEffect(() => {
     loadClientData();
-  }, [email]);
+  }, [loadClientData]);
 async function saveClientStatus(next: any) {
     setNotice("");
 

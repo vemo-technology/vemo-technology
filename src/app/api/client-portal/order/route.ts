@@ -30,6 +30,17 @@ function getBearerToken(request: Request) {
   return authorization.slice(7).trim();
 }
 
+function sanitized<T extends Record<string, any> | null>(record: T) {
+  if (!record) return record;
+  const blocked = new Set([
+    "access_token",
+    "client_access_token",
+    "stripe_session_id",
+    "proof_storage_path",
+  ]);
+  return Object.fromEntries(Object.entries(record).filter(([key]) => !blocked.has(key)));
+}
+
 async function ensureDefaultDocuments({
   supabase,
   email,
@@ -133,6 +144,20 @@ export async function GET(request: Request) {
       .limit(1)
       .maybeSingle();
 
+    const paymentState = String(
+      latestOrder?.payment_status || latestOrder?.status || ""
+    ).toLowerCase();
+    const hasVerifiedPayment = ["paid", "verified", "completed", "succeeded"].includes(
+      paymentState
+    );
+
+    if (!latestOrder || !hasVerifiedPayment) {
+      return NextResponse.json(
+        { error: "Aucune commande payée et vérifiée pour ce compte." },
+        { status: 403 }
+      );
+    }
+
     const { data: existingAccount, error: accountReadError } = await supabase
       .from("client_accounts")
       .select("*")
@@ -221,12 +246,20 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false })
       .limit(30);
 
+    const safeDocuments = await Promise.all((documents || []).map(async (document: any) => {
+      const storagePath = String(document.storage_path || "");
+      if (!storagePath) return { ...document, file_url: null, url: null };
+      const bucket = storagePath.startsWith("bank-transfers/") ? "payment-proofs" : "client-documents";
+      const { data: signed } = await supabase.storage.from(bucket).createSignedUrl(storagePath, 5 * 60);
+      return { ...sanitized(document), storage_path: undefined, file_url: signed?.signedUrl || null, url: signed?.signedUrl || null };
+    }));
+
     return NextResponse.json({
       ok: true,
       email,
-      account,
-      order: latestOrder || null,
-      documents: documents || [],
+      account: sanitized(account),
+      order: sanitized(latestOrder),
+      documents: safeDocuments,
       messages: messages || [],
     });
   } catch (error) {

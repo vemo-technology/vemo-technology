@@ -54,7 +54,6 @@ export default function CountrySelect({
   label,
   value,
   onChange,
-  lang = "fr",
 }: CountrySelectProps) {
   const selected = findCountry(value || "MA");
 

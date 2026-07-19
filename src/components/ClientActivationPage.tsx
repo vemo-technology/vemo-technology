@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy single-line component pending formatting */
 "use client"; import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";

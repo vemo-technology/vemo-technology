@@ -48,7 +48,8 @@ export async function POST(request: Request) {
     }
 
     const bucket = "client-documents";
-    await supabase.storage.createBucket(bucket, { public: true }).then(() => null);
+    await supabase.storage.createBucket(bucket, { public: false }).then(() => null);
+    await supabase.storage.updateBucket(bucket, { public: false }).then(() => null);
 
     const fileName = safeName(file.name);
     const storagePath = `${email}/${Date.now()}-${fileName}`;
@@ -65,8 +66,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: upload.error.message }, { status: 500 });
     }
 
-    const publicUrl = supabase.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl;
-
     if (replaceId) {
       await supabase
         .from("client_documents")
@@ -74,7 +73,7 @@ export async function POST(request: Request) {
           title: file.name,
           document_type: documentType,
           file_name: file.name,
-          file_url: publicUrl,
+          file_url: null,
           storage_path: storagePath,
           status: "replaced",
           updated_at: new Date().toISOString(),
@@ -89,7 +88,7 @@ export async function POST(request: Request) {
       title: file.name,
       document_type: documentType,
       file_name: file.name,
-      file_url: publicUrl,
+      file_url: null,
       storage_path: storagePath,
       status: "active",
       created_at: new Date().toISOString(),

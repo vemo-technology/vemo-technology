@@ -1,99 +1,59 @@
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
+import { verifyClientRequest } from "@/lib/clientAuth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DATA_FILE = path.join(process.cwd(), "data", "client-messages.json");
-
-function cleanEmail(value: any) {
-  return String(value || "").trim().toLowerCase();
+function adminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!url || !key) return null;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-async function ensureFile() {
-  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+export async function GET(request: Request) {
+  const auth = await verifyClientRequest(request);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const supabase = adminClient();
+  if (!supabase) return NextResponse.json({ error: "Database is not configured." }, { status: 500 });
 
-  try {
-    await fs.access(DATA_FILE);
-  } catch {
-    await fs.writeFile(DATA_FILE, "[]", "utf8");
-  }
+  const { data, error } = await supabase
+    .from("client_messages")
+    .select("id,sender,subject,message,content,direction,is_read,created_at")
+    .eq("client_email", auth.email)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) return NextResponse.json({ error: "Unable to load messages." }, { status: 500 });
+  return NextResponse.json({ ok: true, messages: data || [] });
 }
 
-async function readMessages() {
-  await ensureFile();
-
-  try {
-    const raw = await fs.readFile(DATA_FILE, "utf8");
-    const parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeMessages(messages: any[]) {
-  await ensureFile();
-  await fs.writeFile(DATA_FILE, JSON.stringify(messages, null, 2), "utf8");
-}
-
-export async function GET(request: NextRequest) {
-  const email = cleanEmail(request.nextUrl.searchParams.get("email"));
-
-  if (!email) {
-    return NextResponse.json({ ok: true, messages: [] });
+export async function POST(request: Request) {
+  const auth = await verifyClientRequest(request);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const body = await request.json().catch(() => ({}));
+  const subject = String(body.subject || "Client message").trim().slice(0, 160);
+  const message = String(body.message || body.content || "").trim();
+  if (!message || message.length > 10_000) {
+    return NextResponse.json({ error: "Message must contain between 1 and 10000 characters." }, { status: 400 });
   }
 
-  const messages = await readMessages();
-
-  return NextResponse.json({
-    ok: true,
-    messages: messages
-      .filter((msg: any) => cleanEmail(msg.email || msg.client_email) === email)
-      .sort((a: any, b: any) => String(b.created_at).localeCompare(String(a.created_at))),
-  });
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json().catch(() => ({}));
-
-    const email = cleanEmail(body.email || body.client_email);
-    const subject = String(body.subject || "Réponse client").trim();
-    const message = String(body.message || body.content || "").trim();
-
-    if (!email) {
-      return NextResponse.json({ ok: false, error: "Email client obligatoire." }, { status: 400 });
-    }
-
-    if (!message) {
-      return NextResponse.json({ ok: false, error: "Message obligatoire." }, { status: 400 });
-    }
-
-    const messages = await readMessages();
-
-    const item = {
-      id: `msg_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-      email,
-      client_email: email,
+  const supabase = adminClient();
+  if (!supabase) return NextResponse.json({ error: "Database is not configured." }, { status: 500 });
+  const { data, error } = await supabase
+    .from("client_messages")
+    .insert({
+      client_email: auth.email,
+      sender: "client",
       subject,
       message,
       content: message,
-      sender: "client",
       direction: "client_to_admin",
       is_read: false,
       created_at: new Date().toISOString(),
-    };
-
-    messages.unshift(item);
-    await writeMessages(messages);
-
-    return NextResponse.json({ ok: true, message: item });
-  } catch (error: any) {
-    return NextResponse.json(
-      { ok: false, error: error?.message || "Erreur envoi message client." },
-      { status: 500 }
-    );
-  }
+    })
+    .select("id,sender,subject,message,content,direction,is_read,created_at")
+    .single();
+  if (error) return NextResponse.json({ error: "Unable to send message." }, { status: 500 });
+  return NextResponse.json({ ok: true, message: data });
 }
